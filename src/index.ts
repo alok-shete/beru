@@ -1,4 +1,3 @@
-import { AnyRecord } from "dns";
 import {
   Listener,
   Selector,
@@ -7,7 +6,7 @@ import {
   StoreHook,
   StoreWithActions,
   Store,
-  ANY,
+  AnyRecord,
 } from "./utils/types";
 import { create } from "./core/store";
 import { useSelect } from "./core/useSelect";
@@ -26,7 +25,6 @@ export type {
   StoreWithActions,
   Store,
   AnyRecord,
-  ANY,
 };
 
 export default Beru;

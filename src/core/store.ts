@@ -1,6 +1,5 @@
 import { useState } from "./useState";
 import { useSelect } from "./useSelect";
-import { AnyRecord } from "dns";
 import {
   BaseStore,
   Listener,
@@ -8,6 +7,7 @@ import {
   Selector,
   Store,
   StoreWithActions,
+  AnyRecord
 } from "../utils/types";
 
 /**
