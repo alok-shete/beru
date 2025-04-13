@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/npm/v/beru?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/beru)
 [![Downloads](https://img.shields.io/npm/dm/beru.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/beru)
 
-Beru is a small, simple, and type-safe state management solution for React and React Native. Designed to be lightweight and intuitive, Beru helps developers manage application state with ease and confidence.
+Beru is a small, simple, and type-safe state management solution for React and React Native. It offers efficient data persistence and seamless integration with various storage mechanisms. Designed to be lightweight and intuitive, Beru helps developers manage application state with ease and confidence.
 
 ## Features
 
@@ -14,6 +14,7 @@ Beru is a small, simple, and type-safe state management solution for React and R
 - **No Dependencies:** Zero external dependencies for maximum compatibility
 - **Selector Support:** Efficient component re-renders by subscribing only to needed state
 - **Action Creators:** Organize state updates with custom action functions
+- **Persistence:** Optional state persistence with flexible storage options
 - **React & React Native:** Works seamlessly in all React environments
 
 ## Installation
@@ -102,6 +103,51 @@ const ThemeComponent = () => {
     </div>
   );
 }
+```
+
+### Persistence Example
+
+```tsx
+import { create } from 'beru';
+import { persist, setupHydrator } from 'beru/persistence';
+
+// Create a store with persistence
+const useSettings = persist(
+  create({ 
+    theme: 'light', 
+    fontSize: 16, 
+    notifications: true 
+  }),
+  {
+    key: 'app-settings', // Storage key
+    version: 1, // For migration purposes
+    storage: localStorage, // Or any compatible storage
+  }
+);
+
+// Create another persistent store
+const useUserPrefs = persist(
+  create({ language: 'en', currency: 'USD' }).withActions(({ set }) => ({
+    setLanguage: (language) => set({ language }),
+    setCurrency: (currency) => set({ currency }),
+  })),
+  {
+    key: 'user-preferences',
+    version: 1,
+  }
+);
+
+// Setup hydration for both stores
+const hydrateStores = setupHydrator([useSettings, useUserPrefs]);
+
+// Use in your app's entry point
+const App = () => {
+  React.useEffect(() => {
+    hydrateStores();
+  }, []);
+  
+  // Your app components...
+};
 ```
 
 ### Combining Multiple Stores
@@ -195,6 +241,43 @@ const useTodos = create({ todos: [], loading: false, error: null })
   }));
 ```
 
+## Advanced Persistence Configuration
+
+Beru offers robust persistence capabilities through the `persistence` module:
+
+```tsx
+import { persist } from 'beru/persistence';
+
+const persistentStore = persist(yourStore, {
+  // Required
+  key: 'storage-key', // Unique identifier for storage
+  
+  // Optional with defaults
+  debounceTime: 100, // Debounce time for writes (ms)
+  version: 1, // State version for migrations
+  storage: localStorage, // Storage provider (defaults to localStorage)
+  
+  // Optional transformation functions
+  serialize: JSON.stringify, // Custom serialization
+  deserialize: JSON.parse, // Custom deserialization
+  
+  // Optional state handling
+  partial: (state) => state, // Select which parts to persist
+  merge: (initialState, persistedState) => ({ ...initialState, ...persistedState }),
+  migrate: (storedState, storedVersion) => {
+    // Migration logic based on version
+    if (storedVersion === 1) {
+      return storedState; // Return current state
+    }
+    return null; // Return null to use initial state instead
+  },
+  
+  // Other options
+  skipHydrate: false, // Skip initial hydration
+  onError: (type, error) => console.error(`${type} error:`, error),
+});
+```
+
 ## API Reference
 
 ### `create(initialState)`
@@ -252,6 +335,47 @@ const { value1, value2 } = useStore(state => ({
   value1: state.value1,
   value2: state.value2
 }));
+```
+
+### Persistence API
+
+#### `persist(store, config)`
+
+Enhances a store with persistence capabilities.
+
+```tsx
+import { persist } from 'beru/persistence';
+
+const persistentStore = persist(store, {
+  key: 'unique-storage-key',
+  // ...other options
+});
+```
+
+#### `setupHydrator(persistentStores)`
+
+Creates a function that hydrates multiple persistent stores at once.
+
+```tsx
+import { setupHydrator } from 'beru/persistence';
+
+const hydrateStores = setupHydrator([store1, store2, store3]);
+
+// Call in your app's entry point
+hydrateStores();
+```
+
+#### Persistent Store Methods
+
+```tsx
+// Manually hydrate state from storage
+await persistentStore.hydrate();
+
+// Clear persisted state
+await persistentStore.clear();
+
+// Unsubscribe from persistence
+persistentStore.dispose();
 ```
 
 ## Contributing
