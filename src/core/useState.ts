@@ -1,7 +1,8 @@
 import React, { useDebugValue, useCallback } from "react";
 import { Store } from "../utils/types";
+import useSyncExternalStoreExports from "use-sync-external-store/shim/with-selector.js";
 
-import { useSyncExternalStoreWithSelector } from "use-sync-external-store/shim/with-selector";
+const { useSyncExternalStoreWithSelector } = useSyncExternalStoreExports;
 
 export const useState = <TState,>(
   store: Store<TState>

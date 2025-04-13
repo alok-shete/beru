@@ -1,10 +1,12 @@
 import { Store, Selector, StoreWithActions, ANY } from "../utils/types";
-import { useSyncExternalStoreWithSelector } from "use-sync-external-store/shim/with-selector";
+import useSyncExternalStoreExports from "use-sync-external-store/shim/with-selector.js";
+
+const { useSyncExternalStoreWithSelector } = useSyncExternalStoreExports;
 
 export const useSelect = <
   TState,
   TActions extends Record<string, ANY> = Record<string, unknown>,
-  TSelected = TState & TActions
+  TSelected = TState & TActions,
 >(
   store: Store<TState> | StoreWithActions<TState & {}, TActions>,
   selector: Selector<TState & TActions, TSelected> = (state) =>
