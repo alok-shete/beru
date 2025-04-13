@@ -1,6 +1,6 @@
 {
   "name": "beru",
-  "version": "1.0.2",
+  "version": "0.0.1",
   "description": "A lightweight, type-safe state management solution designed to make React state simple",
   "main": "src/index.ts",
   "homepage": "https://github.com/alok-shete/beru#readme",
@@ -11,6 +11,10 @@
     ".": {
       "import": "./src/index.ts",
       "require": "./src/index.ts"
+    },
+    "./persistence": {
+      "import": "./src/persistence/index.ts",
+      "require": "./src/persistence/index.ts"
     }
   },
   "bugs": {

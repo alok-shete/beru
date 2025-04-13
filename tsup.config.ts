@@ -5,14 +5,15 @@ import { promisify } from "util";
 
 export default defineConfig({
   entry: {
-    index: "src/index.ts"
+    index: "src/index.ts",
+    persistence: "src/persistence/index.ts",
   },
   format: ["cjs", "esm"],
   dts: true,
   minify: "terser",
   clean: true,
   sourcemap: true,
-  treeshake: true, 
+  treeshake: true,
   splitting: true,
   target: "es2020",
   onSuccess: async () => await build(),
@@ -35,7 +36,12 @@ const build = async () => {
       import: "./index.mjs",
       require: "./index.js",
       types: "./index.d.ts",
-    }
+    },
+    "./persistence": {
+      import: "./persistence.mjs",
+      require: "./persistence.js",
+      types: "./persistence.d.ts",
+    },
   };
 
   // Convert the modified packageJson object back to a JSON string
