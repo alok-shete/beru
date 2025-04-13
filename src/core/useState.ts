@@ -4,7 +4,16 @@ import useSyncExternalStoreExports from "use-sync-external-store/shim/with-selec
 
 const { useSyncExternalStoreWithSelector } = useSyncExternalStoreExports;
 
-export const useState = <TState,>(
+/**
+ * A custom React hook that provides state and a setter function from a custom store.
+ *
+ * @template TState - The type representing the shape of the store's state.
+ * @param {Store<TState>} store - The store instance to subscribe to.
+ * @returns {[TState, (value: React.SetStateAction<TState>) => void]} - An array containing the current state and a setter function.
+ *
+ */
+
+export const useState = <TState>(
   store: Store<TState>
 ): [TState, (value: React.SetStateAction<TState>) => void] => {
   const selectedState = useSyncExternalStoreWithSelector(
