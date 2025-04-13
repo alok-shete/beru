@@ -74,7 +74,7 @@ describe("create store", () => {
   });
 
   it.only("should call useSelect when extendedStore is used", () => {
-    const  mockUseSelect =  vi.spyOn(useSelectModule, "useSelect");
+    const mockUseSelect = vi.spyOn(useSelectModule, "useSelect");
 
     const useCount = create({ count: 10 }).withActions((s) => ({
       add: () => s.set((prev) => ({ count: prev.count + 1 })),

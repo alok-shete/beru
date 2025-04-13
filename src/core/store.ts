@@ -7,7 +7,7 @@ import {
   Selector,
   Store,
   StoreWithActions,
-  AnyRecord
+  AnyRecord,
 } from "../utils/types";
 
 /**

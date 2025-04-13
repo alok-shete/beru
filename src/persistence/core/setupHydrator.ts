@@ -1,13 +1,12 @@
 import { runImmediately } from "../../utils/common";
 import { persist } from "./persist";
 
-
 /**
  * Creates a hydration function that ensures all provided persistence instances are hydrated.
  *
  * This function accepts an array of `persist`-enhanced store instances and creates a function
  * that, when called, will attempt to hydrate each store from its respective storage.
- * Hydration is asynchronous, and this function ensures all hydration tasks are completed 
+ * Hydration is asynchronous, and this function ensures all hydration tasks are completed
  * before proceeding.
  *
  * @param {ReturnType<typeof persist>[]} persistenceInstances - An array of persistence instances that need to be hydrated.

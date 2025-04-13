@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 /**
  * A type alias for `any`, used to represent any value.
- * 
+ *
  * @deprecated Use specific types wherever possible to maintain type safety.
  */
 type ANY = any;
@@ -13,10 +13,10 @@ type AnyRecord = Record<string, ANY>;
 
 /**
  * Type for an updater function or a direct value.
- * 
+ *
  * If a function is provided, it will receive the previous state and return the new state.
  * If a value is provided, it will directly set the new state.
- * 
+ *
  * @example
  * const setState: Updater<number> = 5;  // Direct value
  * const setState: Updater<number> = (prev) => prev + 1;  // Function
@@ -25,14 +25,14 @@ type Updater<T> = T | ((prev: T) => T);
 
 /**
  * A listener function type that is called when the state changes.
- * 
+ *
  * @param state - The new state of the store.
  */
 type Listener<T> = (state: T) => void;
 
 /**
  * A selector function type that selects a part of the state.
- * 
+ *
  * @param state - The full state of the store.
  * @returns The selected part of the state.
  */
@@ -44,28 +44,28 @@ type Selector<TState, TSelected> = (state: TState) => TSelected;
 interface BaseStore<TState> {
   /**
    * Returns the current state of the store.
-   * 
+   *
    * @returns The current state of the store.
    */
   get: () => TState;
 
   /**
    * Returns the initial state of the store.
-   * 
+   *
    * @returns The initial state of the store.
    */
   getInitialState: () => TState;
 
   /**
    * Updates the state with the provided action (value or function).
-   * 
+   *
    * @param action - The value or function to update the state.
    */
   set: (action: Updater<TState>) => void;
 
   /**
    * Selects a specific part of the state using the provided selector.
-   * 
+   *
    * @param selector - The function used to select a part of the state.
    * @returns The selected part of the state.
    */
@@ -74,7 +74,7 @@ interface BaseStore<TState> {
   /**
    * Subscribes to state changes and calls the listener when the state changes.
    * Returns a function to unsubscribe from state changes.
-   * 
+   *
    * @param listener - The function to call when the state changes.
    * @returns A function to unsubscribe from state changes.
    */
@@ -88,14 +88,14 @@ interface Store<TState> extends BaseStore<TState> {
   /**
    * A hook for accessing and updating the state.
    * It returns the current state and a function to update it.
-   * 
+   *
    * @returns A tuple containing the current state and a setter function.
    */
   <S = TState>(): [S, (value: React.SetStateAction<TState>) => void];
 
   /**
    * Adds actions to the store by wrapping the store and providing a set of actions.
-   * 
+   *
    * @param createActions - A function that defines actions to add to the store.
    * @returns A store with actions added.
    */
@@ -110,14 +110,14 @@ interface Store<TState> extends BaseStore<TState> {
 interface StoreHook<TState> {
   /**
    * Accesses the entire state of the store.
-   * 
+   *
    * @returns The entire state of the store.
    */
   <S = TState>(): S;
 
   /**
    * Accesses a specific part of the state using a selector function.
-   * 
+   *
    * @param selector - A function that extracts part of the state.
    * @returns The selected part of the state.
    */
@@ -134,7 +134,7 @@ interface StoreWithActions<TState extends AnyRecord, TActions extends AnyRecord>
   /**
    * Selects a part of the state, including actions if provided.
    * Optionally accepts a selector to define what part of the state to select.
-   * 
+   *
    * @param selector - (Optional) A function to select part of the state.
    * @returns The selected part of the state, including actions.
    */
@@ -144,7 +144,7 @@ interface StoreWithActions<TState extends AnyRecord, TActions extends AnyRecord>
 
   /**
    * Returns the actions for the store.
-   * 
+   *
    * @returns The actions defined for the store.
    */
   getActions: () => TActions;
@@ -157,7 +157,7 @@ interface StoreWithActions<TState extends AnyRecord, TActions extends AnyRecord>
 export type StorageInterface = {
   /**
    * Gets the stored value for a given key.
-   * 
+   *
    * @param name - The key for the stored item.
    * @returns The stored value, or `null` if not found.
    */
@@ -165,7 +165,7 @@ export type StorageInterface = {
 
   /**
    * Sets a value for a given key.
-   * 
+   *
    * @param name - The key for the item to store.
    * @param value - The value to store.
    */
@@ -173,7 +173,7 @@ export type StorageInterface = {
 
   /**
    * Removes the stored value for a given key.
-   * 
+   *
    * @param name - The key of the item to remove.
    */
   removeItem: (name: string) => Promise<void> | void;
@@ -190,7 +190,7 @@ type StorageProvider = StorageInterface | (() => StorageInterface);
 export interface PersistConfig<T> {
   /**
    * The key used for storing the state.
-   * 
+   *
    * @example
    * const config = { key: 'userStore' }
    */
@@ -199,7 +199,7 @@ export interface PersistConfig<T> {
   /**
    * Optional debounce time (in milliseconds) for persistence actions.
    * Delays storage updates to avoid frequent writes.
-   * 
+   *
    * @default 0
    */
   debounceTime?: number;
@@ -207,14 +207,14 @@ export interface PersistConfig<T> {
   /**
    * Optional version number for persistence, used for migration.
    * The version is used to determine if a migration is needed for the state.
-   * 
+   *
    * @default 1
    */
   version?: number;
 
   /**
    * A migration function to transform the stored value based on the version.
-   * 
+   *
    * @param storedValue - The previous state value to migrate.
    * @param version - The version number of the persisted data.
    * @returns The transformed state value.
@@ -223,7 +223,7 @@ export interface PersistConfig<T> {
 
   /**
    * A function to partially select which state to persist.
-   * 
+   *
    * @param state - The state of the store.
    * @returns The partial state to persist.
    */
@@ -231,7 +231,7 @@ export interface PersistConfig<T> {
 
   /**
    * A function to merge the initial value with the stored value.
-   * 
+   *
    * @param initialValue - The initial value of the state.
    * @param storedValue - The stored value to merge with.
    * @returns The merged state value.
@@ -240,14 +240,14 @@ export interface PersistConfig<T> {
 
   /**
    * A storage provider to persist the state (defaults to `localStorage`).
-   * 
+   *
    * @default localStorage
    */
   storage?: StorageProvider;
 
   /**
    * A function to serialize the store value before persisting it.
-   * 
+   *
    * @param storeValue - The value of the store to serialize.
    * @returns The serialized value.
    */
@@ -255,7 +255,7 @@ export interface PersistConfig<T> {
 
   /**
    * A function to deserialize the persisted value back into the state.
-   * 
+   *
    * @param persisted - The persisted value to deserialize.
    * @returns The deserialized state.
    */
@@ -265,14 +265,14 @@ export interface PersistConfig<T> {
 
   /**
    * Whether to skip hydration (state loading from storage).
-   * 
+   *
    * @default false
    */
   skipHydrate?: boolean;
 
   /**
    * A callback function for handling errors during persistence operations.
-   * 
+   *
    * @param type - The type of error (storage, migration, persistence, or clear).
    * @param error - The error that occurred.
    */
@@ -288,7 +288,7 @@ export interface PersistConfig<T> {
 type PersistentStore<S> = S & {
   /**
    * Hydrates the store with persisted data.
-   * 
+   *
    * @returns A promise if the hydration process is asynchronous.
    */
   hydrate: () => void | Promise<void>;
@@ -300,12 +300,11 @@ type PersistentStore<S> = S & {
 
   /**
    * Clears the persisted state.
-   * 
+   *
    * @returns A promise that resolves when the state is cleared.
    */
   clear: () => Promise<void>;
 };
-
 
 export type {
   Listener,

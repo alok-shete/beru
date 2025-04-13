@@ -30,7 +30,6 @@ export function persist<T extends AnyRecord, A extends AnyRecord>(
   config: PersistConfig<T>
 ): PersistentStore<StoreWithActions<T, A>>;
 
-
 export function persist<T, A>(
   store: Store<T> | StoreWithActions<T & AnyRecord, A & AnyRecord>,
   config: PersistConfig<T>
@@ -90,7 +89,7 @@ export function persist<T, A>(
         const migratedState = migrate(storedState, storedVersion);
 
         if (migratedState) {
-          store.set(merge(originalGet(), migratedState) as T & AnyRecord); 
+          store.set(merge(originalGet(), migratedState) as T & AnyRecord);
         }
       } catch (error) {
         onError("migration", error);

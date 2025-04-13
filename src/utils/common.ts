@@ -1,6 +1,7 @@
 import { StorageInterface } from "./types";
 
-const wrap = <T>(fn: T) => (process.env.NODE_ENV !== "production" ? fn : () => {});
+const wrap = <T>(fn: T) =>
+  process.env.NODE_ENV !== "production" ? fn : () => {};
 
 export const LOG = {
   warn: wrap(console.warn),
