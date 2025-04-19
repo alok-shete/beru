@@ -1,8 +1,6 @@
 import React, { useDebugValue, useCallback } from "react";
 import { Store } from "../utils/types";
-import useSyncExternalStoreExports from "use-sync-external-store/shim/with-selector.js";
-
-const { useSyncExternalStoreWithSelector } = useSyncExternalStoreExports;
+import { useSyncExternalStore } from "react";
 
 /**
  * A custom React hook that provides state and a setter function from a custom store.
@@ -12,15 +10,13 @@ const { useSyncExternalStoreWithSelector } = useSyncExternalStoreExports;
  * @returns {[TState, (value: React.SetStateAction<TState>) => void]} - An array containing the current state and a setter function.
  *
  */
-
 export const useState = <TState>(
   store: Store<TState>
 ): [TState, (value: React.SetStateAction<TState>) => void] => {
-  const selectedState = useSyncExternalStoreWithSelector(
+  const selectedState = useSyncExternalStore(
     store.subscribe,
-    store.get,
-    store.getInitialState,
-    (state) => state
+    () => store.get(),
+    () => store.getInitialState()
   );
   useDebugValue(selectedState);
 
