@@ -64,14 +64,6 @@ interface BaseStore<TState> {
   set: (action: Updater<TState>) => void;
 
   /**
-   * Selects a specific part of the state using the provided selector.
-   *
-   * @param selector - The function used to select a part of the state.
-   * @returns The selected part of the state.
-   */
-  select: <TSelected>(selector: Selector<TState, TSelected>) => TSelected;
-
-  /**
    * Subscribes to state changes and calls the listener when the state changes.
    * Returns a function to unsubscribe from state changes.
    *
@@ -131,17 +123,7 @@ interface StoreHook<TState> {
 interface StoreWithActions<TState extends AnyRecord, TActions extends AnyRecord>
   extends Omit<BaseStore<TState>, "select">,
     StoreHook<TState & TActions> {
-  /**
-   * Selects a part of the state, including actions if provided.
-   * Optionally accepts a selector to define what part of the state to select.
-   *
-   * @param selector - (Optional) A function to select part of the state.
-   * @returns The selected part of the state, including actions.
-   */
-  select: <TSelected = TState & TActions>(
-    selector?: Selector<TState & TActions, TSelected>
-  ) => TSelected;
-
+  
   /**
    * Returns the actions for the store.
    *

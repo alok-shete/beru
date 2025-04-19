@@ -33,9 +33,6 @@ const createBaseStore = <TState>(initialState: TState): BaseStore<TState> => {
     notify();
   };
 
-  const select = <TSelected>(selector: Selector<TState, TSelected>) =>
-    selector(state);
-
   const subscribe = (listener: Listener<TState>) => {
     listeners.add(listener);
     listener(state);
@@ -46,7 +43,7 @@ const createBaseStore = <TState>(initialState: TState): BaseStore<TState> => {
     listeners.forEach((listener) => listener(state));
   };
 
-  return { get, set, select, subscribe, getInitialState };
+  return { get, set, subscribe, getInitialState };
 };
 
 /**
@@ -84,15 +81,9 @@ export const create = <TState>(initialState: TState): Store<TState> => {
       TActions
     >;
 
-    // Extended selector to retrieve state and actions together
-    const extendedSelect = <TSelected>(
-      selector: Selector<TState & TActions, TSelected>
-    ): TSelected => selector({ ...baseStore.get(), ...actions });
-
     // Assign the base store and extended functionality (select and actions) to the extended store
     Object.assign(extendedStore, {
       ...baseStore,
-      select: extendedSelect,
       getActions: () => actions,
     });
 
