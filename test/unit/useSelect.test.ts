@@ -1,3 +1,5 @@
+import { describe, it, expect, vi } from "vitest";
+
 import { renderHook, act } from "@testing-library/react";
 import { create, useSelect } from "../../src";
 
@@ -36,10 +38,14 @@ describe("useSelect hook", () => {
     }));
 
     const { result } = renderHook(() =>
-      useSelect(store, (s) => ({
-        count: s.count,
-        inc: s.inc,
-      }))
+      useSelect(store, (s) => {
+
+        console.log(s)
+        return ({
+          count: s.count,
+          inc: s.inc,
+        })
+      })
     );
 
     expect(result.current.count).toBe(2);
@@ -49,6 +55,6 @@ describe("useSelect hook", () => {
       result.current.inc();
     });
 
-    expect(store.select((s) => s.count)).toBe(3);
+    expect(store.get().count).toBe(3);
   });
 });

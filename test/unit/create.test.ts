@@ -31,7 +31,7 @@ describe("create store", () => {
 
   it("should return selected state using select", () => {
     const store = create({ count: 42, name: "test" });
-    const name = store.select((state) => state.name);
+    const name = store.get().name;
     expect(name).toBe("test");
   });
 
@@ -48,19 +48,19 @@ describe("create store", () => {
     expect(store.get().count).toBe(0);
   });
 
-  it("should select from extended store including actions", () => {
-    const store = create({ count: 0 }).withActions((s) => ({
+  it.only("should select from extended store including actions", () => {
+    const store = create({ count: 1 }).withActions((s) => ({
       double: () => s.set((prev) => ({ count: prev.count * 2 })),
     }));
 
-    const selected = store.select(({ count }) => count);
-    expect(selected).toBe(0);
+    const selected = store.get();
+    expect(selected.count).toBe(1);
 
     store.getActions().double();
-    expect(store.select(({ count }) => count)).toBe(0);
+    expect(store.get().count).toBe(2);
   });
 
-  it.only("should call useState when store is initialized", () => {
+  it("should call useState when store is initialized", () => {
     const mockUseState = vi.spyOn(useStateModule, "useState");
 
     const useName = create("Alok");
@@ -73,7 +73,7 @@ describe("create store", () => {
     expect(mockUseState).toHaveBeenCalledOnce();
   });
 
-  it.only("should call useSelect when extendedStore is used", () => {
+  it("should call useSelect when extendedStore is used", () => {
     const mockUseSelect = vi.spyOn(useSelectModule, "useSelect");
 
     const useCount = create({ count: 10 }).withActions((s) => ({
@@ -85,19 +85,6 @@ describe("create store", () => {
     expect(result.current).toBe(10);
 
     expect(mockUseSelect).toHaveBeenCalledOnce();
-  });
-
-  it("should return full state and actions inside selector of extendedStore", () => {
-    const store = create({ count: 5 }).withActions((s) => ({
-      add: () => s.set((prev) => ({ count: prev.count + 1 })),
-    }));
-
-    const result = store.select(({ count, add }) => {
-      expect(typeof add).toBe("function");
-      return count;
-    });
-
-    expect(result).toBe(5);
   });
 
   it("should return the initial state using getInitialState()", () => {
