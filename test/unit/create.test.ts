@@ -48,7 +48,7 @@ describe("create store", () => {
     expect(store.get().count).toBe(0);
   });
 
-  it.only("should select from extended store including actions", () => {
+  it("should select from extended store including actions", () => {
     const store = create({ count: 1 }).withActions((s) => ({
       double: () => s.set((prev) => ({ count: prev.count * 2 })),
     }));
