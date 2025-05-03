@@ -12,7 +12,7 @@ export const LOG = {
 export const runImmediately = <T>(callback: () => T): T => callback();
 
 export const createFallbackStorage = (): StorageInterface => {
-  const createWarningHandler =
+  const warn =
     <A>(operation: string, defaultReturn: A) =>
     () => {
       LOG.warn(`Uninitialized storage: ${operation}`);
@@ -20,8 +20,8 @@ export const createFallbackStorage = (): StorageInterface => {
     };
 
   return {
-    getItem: createWarningHandler("getItem", null),
-    setItem: createWarningHandler("setItem", undefined),
-    removeItem: createWarningHandler("removeItem", undefined),
+    getItem: warn("getItem", null),
+    setItem: warn("setItem", undefined),
+    removeItem: warn("removeItem", undefined),
   };
 };
