@@ -1,4 +1,4 @@
-import React, { useDebugValue, useCallback } from "react";
+import React, { useDebugValue } from "react";
 import { Store } from "../utils/types";
 import { useSyncExternalStore } from "react";
 
@@ -15,17 +15,10 @@ export const useState = <TState>(
 ): [TState, (value: React.SetStateAction<TState>) => void] => {
   const selectedState = useSyncExternalStore(
     store.subscribe,
-    () => store.get(),
-    () => store.getInitialState()
+    store.get,
+    store.getInitialState
   );
   useDebugValue(selectedState);
 
-  const setState = useCallback(
-    (value: React.SetStateAction<TState>) => {
-      store.set(value);
-    },
-    [store]
-  );
-
-  return [selectedState, setState];
+  return [selectedState, store.set];
 };

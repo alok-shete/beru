@@ -24,7 +24,6 @@ export function persist<T>(
   config: PersistConfig<T>
 ): PersistentStore<Store<T>>;
 
-// Overload for StoreWithActions<T, A>
 export function persist<T extends AnyRecord, A extends AnyRecord>(
   store: StoreWithActions<T, A>,
   config: PersistConfig<T>
@@ -40,9 +39,8 @@ export function persist<T, A>(
     version = 0,
     serialize = JSON.stringify,
     deserialize = JSON.parse,
-    migrate = <A = ANY>(persistedState: A, persistedVersion: number) => {
-      return persistedVersion === version ? persistedState : null;
-    },
+    migrate = <A = ANY>(state: A, persistedVersion: number) =>
+      persistedVersion === version ? state : null,
     partial = (state: T) => state,
     merge = (initialState: T, persistedState: T) =>
       typeof initialState === "object" && typeof persistedState === "object"
@@ -95,14 +93,12 @@ export function persist<T, A>(
         onError("migration", error);
       }
     }
-
     initializeSubscription();
   };
 
   const hydrate = () => {
-    if (pendingHydration instanceof Promise) {
-      return pendingHydration;
-    }
+    if (pendingHydration instanceof Promise) return pendingHydration;
+
     try {
       const storageInstance = getStorageInstance();
       const storedData = storageInstance.getItem(storageKey);
@@ -139,15 +135,14 @@ export function persist<T, A>(
     if (persistenceTimer) clearTimeout(persistenceTimer);
   };
 
-  const clear = () => {
-    return runImmediately(async () => {
+  const clear = () =>
+    runImmediately(async () => {
       try {
         await getStorageInstance().removeItem(storageKey);
       } catch (error) {
         onError("clear", error);
       }
     });
-  };
 
   store.get = () => {
     if (!isStoreInitialized) {
@@ -157,9 +152,5 @@ export function persist<T, A>(
     return originalGet();
   };
 
-  return Object.assign(store, {
-    hydrate,
-    dispose,
-    clear,
-  });
+  return Object.assign(store, { hydrate, dispose, clear });
 }

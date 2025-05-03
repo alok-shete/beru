@@ -22,26 +22,18 @@ export const useSelect = <
   selector: Selector<TState & TActions, TSelected> = (state) =>
     state as TSelected
 ): TSelected => {
-  // Retrieve the current state from the store
   const state = useSyncExternalStore(
     store.subscribe,
-    () => store.get(),
-    () => store.getInitialState()
+    store.get,
+    store.getInitialState
   );
 
-  // Memoize the result of applying the selector to prevent unnecessary re-renders
   return useMemo(() => {
-    // Merge state with actions (if available)
-    const stateWithActions = (
+    const stateWithActions =
       "getActions" in store
-        ? {
-            ...state,
-            ...store.getActions(),
-          }
-        : state
-    ) as TState & TActions;
+        ? { ...state, ...store.getActions() }
+        : (state as TState & TActions);
 
-    // Apply the selector function
     return selector(stateWithActions);
   }, [state, selector]);
 };
