@@ -46,6 +46,7 @@
     "zustand",
     "jotai"
   ],
+  "sideEffects": false,
   "author": "Alok Shete",
   "license": "MIT",
   "devDependencies": {
