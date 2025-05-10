@@ -3,8 +3,6 @@ import { useSelect } from "./useSelect";
 import {
   BaseStore,
   Listener,
-  Updater,
-  Selector,
   Store,
   StoreWithActions,
   AnyRecord,
@@ -20,14 +18,14 @@ const createBaseStore = <TState>(initialState: TState): BaseStore<TState> => {
   return {
     get: () => state,
     getInitialState: () => initialState,
-    set: (action: Updater<TState>) => {
+    set: (action) => {
       state =
         typeof action === "function"
           ? (action as (prev: TState) => TState)(state)
           : action;
       listeners.forEach((listener) => listener(state));
     },
-    subscribe: (listener: Listener<TState>) => {
+    subscribe: (listener) => {
       listeners.add(listener);
       listener(state);
       return () => listeners.delete(listener);
@@ -43,11 +41,12 @@ const createBaseStore = <TState>(initialState: TState): BaseStore<TState> => {
  * @returns {Store<TState>} - A store object that contains state management utilities and an optional method to extend the store with actions.
  */
 export const create = <TState>(initialState: TState): Store<TState> => {
-  const baseStore = createBaseStore(initialState);
+  const base = createBaseStore(initialState);
   const store = (() => useState(store)) as Store<TState>;
 
   Object.assign(store, {
-    ...baseStore,
+    ...base,
+
     /**
      * Extends the store with custom actions, allowing the store to be enhanced with new functionality.
      *
@@ -57,17 +56,16 @@ export const create = <TState>(initialState: TState): Store<TState> => {
      */
     withActions: <TActions extends AnyRecord>(
       createActions: (store: Store<TState>) => TActions
-    ): StoreWithActions<TState & {}, TActions> => {
+    ) => {
       const actions = createActions(store);
-      const extendedStore = (<TSelected>(
-        selector: Selector<TState & TActions, TSelected>
-      ) => useSelect(extendedStore, selector)) as StoreWithActions<
+      const extendedStore = ((selector) =>
+        useSelect(extendedStore, selector)) as StoreWithActions<
         TState & {},
         TActions
       >;
 
       Object.assign(extendedStore, {
-        ...baseStore,
+        ...base,
         getActions: () => actions,
       });
 

@@ -13,8 +13,12 @@
       "require": "./src/index.ts"
     },
     "./persistence": {
-      "import": "./src/persistence/index.ts",
-      "require": "./src/persistence/index.ts"
+      "import": "./src/middleware/persistence/index.ts",
+      "require": "./src/middleware/persistence/index.ts"
+    },
+    "./devtool": {
+      "import": "./src/middleware/devtool/index.ts",
+      "require": "./src/middleware/devtool/index.ts"
     }
   },
   "bugs": {

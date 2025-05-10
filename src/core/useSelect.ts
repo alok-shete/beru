@@ -1,5 +1,5 @@
 import { Store, Selector, StoreWithActions, ANY } from "../utils/types";
-import { useSyncExternalStore, useMemo } from "react";
+import { useSyncExternalStore, useMemo, useDebugValue } from "react";
 
 /**
  * A custom hook that subscribes to a store and allows selecting a slice of state, with optional actions, using a selector function.
@@ -28,7 +28,7 @@ export const useSelect = <
     store.getInitialState
   );
 
-  return useMemo(() => {
+  const selected = useMemo(() => {
     const stateWithActions =
       "getActions" in store
         ? { ...state, ...store.getActions() }
@@ -36,4 +36,8 @@ export const useSelect = <
 
     return selector(stateWithActions);
   }, [state, selector]);
+
+  useDebugValue(selected);
+
+  return selected;
 };

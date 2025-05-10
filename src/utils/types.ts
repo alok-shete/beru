@@ -1,4 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+import { SetStateAction } from "react";
+
 /**
  * A type alias for `any`, used to represent any value.
  *
@@ -10,18 +13,6 @@ type ANY = any;
  * A record type where the keys are strings and the values can be any type.
  */
 type AnyRecord = Record<string, ANY>;
-
-/**
- * Type for an updater function or a direct value.
- *
- * If a function is provided, it will receive the previous state and return the new state.
- * If a value is provided, it will directly set the new state.
- *
- * @example
- * const setState: Updater<number> = 5;  // Direct value
- * const setState: Updater<number> = (prev) => prev + 1;  // Function
- */
-type Updater<T> = T | ((prev: T) => T);
 
 /**
  * A listener function type that is called when the state changes.
@@ -61,7 +52,9 @@ interface BaseStore<TState> {
    *
    * @param action - The value or function to update the state.
    */
-  set: (action: Updater<TState>) => void;
+  set(state: TState): void;
+  set(action: (state: TState) => TState): void;
+  set(action: SetStateAction<TState>): void;
 
   /**
    * Subscribes to state changes and calls the listener when the state changes.
@@ -123,7 +116,6 @@ interface StoreHook<TState> {
 interface StoreWithActions<TState extends AnyRecord, TActions extends AnyRecord>
   extends Omit<BaseStore<TState>, "select">,
     StoreHook<TState & TActions> {
-  
   /**
    * Returns the actions for the store.
    *
@@ -291,7 +283,7 @@ type PersistentStore<S> = S & {
 export type {
   Listener,
   Selector,
-  Updater,
+  SetStateAction,
   BaseStore,
   StoreHook,
   StoreWithActions,
