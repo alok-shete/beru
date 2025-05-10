@@ -6,7 +6,8 @@ import { promisify } from "util";
 export default defineConfig({
   entry: {
     index: "src/index.ts",
-    persistence: "src/persistence/index.ts",
+    persistence: "src/middleware/persistence/index.ts",
+    devtool: "src/middleware/devtool/index.ts",
   },
   format: ["cjs", "esm"],
   dts: true,
@@ -41,6 +42,11 @@ const build = async () => {
       import: "./persistence.mjs",
       require: "./persistence.js",
       types: "./persistence.d.ts",
+    },
+    "./devtool": {
+      import: "./devtool.mjs",
+      require: "./devtool.js",
+      types: "./devtool.d.ts",
     },
   };
 

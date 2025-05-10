@@ -1,7 +1,6 @@
 import {
   Listener,
   Selector,
-  Updater,
   BaseStore,
   StoreHook,
   StoreWithActions,
@@ -19,7 +18,6 @@ export { useSelect, create, useState };
 export type {
   Listener,
   Selector,
-  Updater,
   BaseStore,
   StoreHook,
   StoreWithActions,
