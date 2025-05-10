@@ -1,13 +1,16 @@
-import { createFallbackStorage, LOG, runImmediately } from "../../utils/common";
+import {
+  createFallbackStorage,
+  LOG,
+  runImmediately,
+} from "../../../utils/common";
 import {
   ANY,
   AnyRecord,
+  BaseStore,
   PersistConfig,
   PersistentStore,
   StorageInterface,
-  Store,
-  StoreWithActions,
-} from "../../utils/types";
+} from "../../../utils/types";
 
 /**
  * Persist a store or a store with actions to a specified storage.
@@ -19,20 +22,10 @@ import {
  * @param {PersistConfig<T>} config - Configuration for persistence such as storage key, debounce time, migration, etc.
  * @returns {PersistentStore<typeof store>} The persistent store, which includes methods for hydration, disposal, and clearing.
  */
-export function persist<T>(
-  store: Store<T>,
+export function persist<T, S extends BaseStore<T>>(
+  store: S,
   config: PersistConfig<T>
-): PersistentStore<Store<T>>;
-
-export function persist<T extends AnyRecord, A extends AnyRecord>(
-  store: StoreWithActions<T, A>,
-  config: PersistConfig<T>
-): PersistentStore<StoreWithActions<T, A>>;
-
-export function persist<T, A>(
-  store: Store<T> | StoreWithActions<T & AnyRecord, A & AnyRecord>,
-  config: PersistConfig<T>
-): PersistentStore<typeof store> {
+): PersistentStore<S> {
   const {
     key: storageKey,
     debounceTime = 100,

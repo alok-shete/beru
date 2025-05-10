@@ -2,7 +2,7 @@ import {
   PersistConfig,
   PersistentStore,
   StorageInterface,
-} from "../utils/types";
+} from "../../utils/types";
 import { persist } from "./core/persist";
 import { setupHydrator } from "./core/setupHydrator";
 
