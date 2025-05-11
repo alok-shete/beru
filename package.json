@@ -16,9 +16,9 @@
       "import": "./src/middleware/persistence/index.ts",
       "require": "./src/middleware/persistence/index.ts"
     },
-    "./devtool": {
-      "import": "./src/middleware/devtool/index.ts",
-      "require": "./src/middleware/devtool/index.ts"
+    "./devtools": {
+      "import": "./src/middleware/devtools/index.ts",
+      "require": "./src/middleware/devtools/index.ts"
     }
   },
   "bugs": {

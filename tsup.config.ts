@@ -7,7 +7,7 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     persistence: "src/middleware/persistence/index.ts",
-    devtool: "src/middleware/devtool/index.ts",
+    devtools: "src/middleware/devtools/index.ts",
   },
   format: ["cjs", "esm"],
   dts: true,
@@ -43,10 +43,10 @@ const build = async () => {
       require: "./persistence.js",
       types: "./persistence.d.ts",
     },
-    "./devtool": {
-      import: "./devtool.mjs",
-      require: "./devtool.js",
-      types: "./devtool.d.ts",
+    "./devtools": {
+      import: "./devtools.mjs",
+      require: "./devtools.js",
+      types: "./devtools.d.ts",
     },
   };
 

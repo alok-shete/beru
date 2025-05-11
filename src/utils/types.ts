@@ -280,6 +280,79 @@ type PersistentStore<S> = S & {
   clear: () => Promise<void>;
 };
 
+type DevToolsFeatures = {
+  pause?: boolean;
+  lock?: boolean;
+  persist?: boolean;
+  sweep?: boolean;
+  export?: boolean;
+  import?: string;
+  jump?: boolean;
+  skip?: boolean;
+  reorder?: boolean;
+  dispatch?: boolean;
+};
+
+interface DevtoolsConfig {
+  name?: string;
+  features?: DevToolsFeatures;
+  enabled?:boolean
+}
+
+type DevToolsPayload =
+  | { type: "PAUSE_RECORDING"; status: boolean }
+  | { type: "JUMP_TO_ACTION"; actionId: number }
+  | { type: "JUMP_TO_STATE"; actionId: number }
+  | { type: "TOGGLE_ACTION"; actionId: number }
+  | { type: "RESET"; timestamp: number }
+  | { type: "ROLLBACK"; timestamp: number }
+  | { type: "COMMIT"; timestamp: number };
+
+type DevToolsMessage =
+  | {
+      type: "START";
+      state?: undefined;
+      id?: undefined;
+      source: string;
+    }
+  | {
+      type: "DISPATCH";
+      payload: DevToolsPayload;
+      state?: string;
+      id: number;
+      source: string;
+    };
+
+declare global {
+  interface Window {
+    __REDUX_DEVTOOLS_EXTENSION__: {
+      connect: (options: { name: string; features: DevToolsFeatures }) => {
+        subscribe: (listener: (message: DevToolsMessage) => void) => () => void;
+        init: (state: any) => void;
+        send: (action: string, state: any) => void;
+      };
+    };
+  }
+}
+
+type DevtoolsStore<S> = S & {
+  __devtoolsUnsubscribe?: () => void;
+  dispatch: (actionType: string, payload?: any) => void; //TODO -
+};
+
+// Store original states for time travel
+interface DevtoolsState<T> {
+  initialState: T;
+  currentState: T;
+  actionsHistory: Array<{
+    actionType: string;
+    state: T;
+    payload?: any;
+    skipped?: boolean;
+  }>;
+  pausedRecording: boolean;
+}
+
 export type {
   Listener,
   Selector,
@@ -291,4 +364,10 @@ export type {
   AnyRecord,
   ANY,
   PersistentStore,
+  DevToolsFeatures,
+  DevToolsPayload,
+  DevToolsMessage,
+  DevtoolsStore,
+  DevtoolsState,
+  DevtoolsConfig
 };
