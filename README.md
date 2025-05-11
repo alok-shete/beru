@@ -119,7 +119,7 @@ const useSettings = persist(
     notifications: true 
   }),
   {
-    key: 'app-settings', // Storage key
+    name: 'app-settings', // Storage key
     version: 1, // For migration purposes
     storage: localStorage, // Or any compatible storage
   }
@@ -132,7 +132,7 @@ const useUserPrefs = persist(
     setCurrency: (currency) => set({ currency }),
   })),
   {
-    key: 'user-preferences',
+    name: 'user-preferences',
     version: 1,
   }
 );
@@ -250,7 +250,7 @@ import { persist } from 'beru/persistence';
 
 const persistentStore = persist(yourStore, {
   // Required
-  key: 'storage-key', // Unique identifier for storage
+  name: 'storage-key', // Unique identifier for storage
   
   // Optional with defaults
   debounceTime: 100, // Debounce time for writes (ms)
@@ -347,7 +347,7 @@ Enhances a store with persistence capabilities.
 import { persist } from 'beru/persistence';
 
 const persistentStore = persist(store, {
-  key: 'unique-storage-key',
+  name: 'unique-storage-key',
   // ...other options
 });
 ```
