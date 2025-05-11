@@ -27,7 +27,7 @@ export function persist<T, S extends BaseStore<T>>(
   config: PersistConfig<T>
 ): PersistentStore<S> {
   const {
-    key: storageKey,
+    name: storageKey,
     debounceTime = 100,
     version = 0,
     serialize = JSON.stringify,

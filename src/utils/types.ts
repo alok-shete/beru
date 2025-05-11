@@ -168,7 +168,7 @@ export interface PersistConfig<T> {
    * @example
    * const config = { key: 'userStore' }
    */
-  key: string;
+  name: string;
 
   /**
    * Optional debounce time (in milliseconds) for persistence actions.
