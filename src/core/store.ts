@@ -55,9 +55,9 @@ export const create = <TState>(initialState: TState): Store<TState> => {
      * @returns {StoreWithActions<TState & {}, TActions>} - The extended store with both state management and actions.
      */
     withActions: <TActions extends AnyRecord>(
-      createActions: (store: Store<TState>) => TActions
+      createActions: (store: BaseStore<TState>) => TActions
     ) => {
-      const actions = createActions(store);
+      const actions = createActions(base);
       const extendedStore = ((selector) =>
         useSelect(extendedStore, selector)) as StoreWithActions<
         TState & {},

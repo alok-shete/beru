@@ -85,7 +85,7 @@ interface Store<TState> extends BaseStore<TState> {
    * @returns A store with actions added.
    */
   withActions: <TActions extends AnyRecord>(
-    createActions: (store: Store<TState>) => TActions
+    createActions: (store: BaseStore<TState>) => TActions
   ) => StoreWithActions<TState & {}, TActions>;
 }
 
