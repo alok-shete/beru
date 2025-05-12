@@ -1,6 +1,6 @@
 {
   "name": "beru",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A lightweight, type-safe state management solution designed to make React state simple",
   "main": "src/index.ts",
   "homepage": "https://github.com/alok-shete/beru#readme",
