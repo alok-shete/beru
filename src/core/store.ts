@@ -1,5 +1,4 @@
-import { useState } from "./useState";
-import { useSelect } from "./useSelect";
+import { useState, useSelect } from "./hooks";
 import {
   BaseStore,
   Listener,

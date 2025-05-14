@@ -8,8 +8,7 @@ import {
   AnyRecord,
 } from "./utils/types";
 import { create } from "./core/store";
-import { useSelect } from "./core/useSelect";
-import { useState } from "./core/useState";
+import { useSelect, useState } from "./core/hooks";
 
 const Beru = { useSelect, create, useState } as const;
 
