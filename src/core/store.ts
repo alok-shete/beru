@@ -44,9 +44,7 @@ export const create = <TState>(initialState: TState): Store<TState> => {
   const base = createBaseStore(initialState);
   const store = (() => useState(store)) as Store<TState>;
 
-  Object.assign(store, {
-    ...base,
-
+  Object.assign(store, base, {
     /**
      * Extends the store with custom actions, allowing the store to be enhanced with new functionality.
      *
@@ -64,12 +62,9 @@ export const create = <TState>(initialState: TState): Store<TState> => {
         TActions
       >;
 
-      Object.assign(extendedStore, {
-        ...base,
+      return Object.assign(extendedStore, base, {
         getActions: () => actions,
       });
-
-      return extendedStore;
     },
   });
 

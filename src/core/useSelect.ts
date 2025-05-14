@@ -28,14 +28,15 @@ export const useSelect = <
     store.getInitialState
   );
 
-  const selected = useMemo(() => {
-    const stateWithActions =
-      "getActions" in store
-        ? { ...state, ...store.getActions() }
-        : (state as TState & TActions);
-
-    return selector(stateWithActions);
-  }, [state, selector]);
+  const selected = useMemo(
+    () =>
+      selector(
+        "getActions" in store
+          ? { ...state, ...store.getActions() }
+          : (state as TState & TActions)
+      ),
+    [state, selector]
+  );
 
   useDebugValue(selected);
 
