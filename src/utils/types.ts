@@ -1,4 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+import { SetStateAction } from "react";
+
 /**
  * A type alias for `any`, used to represent any value.
  *
@@ -10,18 +13,6 @@ type ANY = any;
  * A record type where the keys are strings and the values can be any type.
  */
 type AnyRecord = Record<string, ANY>;
-
-/**
- * Type for an updater function or a direct value.
- *
- * If a function is provided, it will receive the previous state and return the new state.
- * If a value is provided, it will directly set the new state.
- *
- * @example
- * const setState: Updater<number> = 5;  // Direct value
- * const setState: Updater<number> = (prev) => prev + 1;  // Function
- */
-type Updater<T> = T | ((prev: T) => T);
 
 /**
  * A listener function type that is called when the state changes.
@@ -61,7 +52,9 @@ interface BaseStore<TState> {
    *
    * @param action - The value or function to update the state.
    */
-  set: (action: Updater<TState>) => void;
+  set(state: TState): void;
+  set(action: (state: TState) => TState): void;
+  set(action: SetStateAction<TState>): void;
 
   /**
    * Subscribes to state changes and calls the listener when the state changes.
@@ -92,7 +85,7 @@ interface Store<TState> extends BaseStore<TState> {
    * @returns A store with actions added.
    */
   withActions: <TActions extends AnyRecord>(
-    createActions: (store: Store<TState>) => TActions
+    createActions: (store: BaseStore<TState>) => TActions
   ) => StoreWithActions<TState & {}, TActions>;
 }
 
@@ -123,7 +116,6 @@ interface StoreHook<TState> {
 interface StoreWithActions<TState extends AnyRecord, TActions extends AnyRecord>
   extends Omit<BaseStore<TState>, "select">,
     StoreHook<TState & TActions> {
-  
   /**
    * Returns the actions for the store.
    *
@@ -176,7 +168,7 @@ export interface PersistConfig<T> {
    * @example
    * const config = { key: 'userStore' }
    */
-  key: string;
+  name: string;
 
   /**
    * Optional debounce time (in milliseconds) for persistence actions.
@@ -288,10 +280,83 @@ type PersistentStore<S> = S & {
   clear: () => Promise<void>;
 };
 
+type DevToolsFeatures = {
+  pause?: boolean;
+  lock?: boolean;
+  persist?: boolean;
+  sweep?: boolean;
+  export?: boolean;
+  import?: string;
+  jump?: boolean;
+  skip?: boolean;
+  reorder?: boolean;
+  dispatch?: boolean;
+};
+
+interface DevtoolsConfig {
+  name?: string;
+  features?: DevToolsFeatures;
+  enabled?:boolean
+}
+
+type DevToolsPayload =
+  | { type: "PAUSE_RECORDING"; status: boolean }
+  | { type: "JUMP_TO_ACTION"; actionId: number }
+  | { type: "JUMP_TO_STATE"; actionId: number }
+  | { type: "TOGGLE_ACTION"; actionId: number }
+  | { type: "RESET"; timestamp: number }
+  | { type: "ROLLBACK"; timestamp: number }
+  | { type: "COMMIT"; timestamp: number };
+
+type DevToolsMessage =
+  | {
+      type: "START";
+      state?: undefined;
+      id?: undefined;
+      source: string;
+    }
+  | {
+      type: "DISPATCH";
+      payload: DevToolsPayload;
+      state?: string;
+      id: number;
+      source: string;
+    };
+
+declare global {
+  interface Window {
+    __REDUX_DEVTOOLS_EXTENSION__: {
+      connect: (options: { name: string; features: DevToolsFeatures }) => {
+        subscribe: (listener: (message: DevToolsMessage) => void) => () => void;
+        init: (state: any) => void;
+        send: (action: string, state: any) => void;
+      };
+    };
+  }
+}
+
+type DevtoolsStore<S> = S & {
+  __devtoolsUnsubscribe?: () => void;
+  dispatch: (actionType: string, payload?: any) => void; //TODO -
+};
+
+// Store original states for time travel
+interface DevtoolsState<T> {
+  initialState: T;
+  currentState: T;
+  actionsHistory: Array<{
+    actionType: string;
+    state: T;
+    payload?: any;
+    skipped?: boolean;
+  }>;
+  pausedRecording: boolean;
+}
+
 export type {
   Listener,
   Selector,
-  Updater,
+  SetStateAction,
   BaseStore,
   StoreHook,
   StoreWithActions,
@@ -299,4 +364,10 @@ export type {
   AnyRecord,
   ANY,
   PersistentStore,
+  DevToolsFeatures,
+  DevToolsPayload,
+  DevToolsMessage,
+  DevtoolsStore,
+  DevtoolsState,
+  DevtoolsConfig
 };

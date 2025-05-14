@@ -1,5 +1,13 @@
+import {
+  SetStateAction,
+  useSyncExternalStore,
+  useMemo,
+  useDebugValue,
+} from "react";
 import { Store, Selector, StoreWithActions, ANY } from "../utils/types";
-import { useSyncExternalStore, useMemo } from "react";
+
+const useSyncExternalStoreReact = useSyncExternalStore;
+const useDebugValueReact = useDebugValue;
 
 /**
  * A custom hook that subscribes to a store and allows selecting a slice of state, with optional actions, using a selector function.
@@ -22,18 +30,44 @@ export const useSelect = <
   selector: Selector<TState & TActions, TSelected> = (state) =>
     state as TSelected
 ): TSelected => {
-  const state = useSyncExternalStore(
+  const state = useSyncExternalStoreReact(
     store.subscribe,
     store.get,
     store.getInitialState
   );
 
-  return useMemo(() => {
-    const stateWithActions =
-      "getActions" in store
-        ? { ...state, ...store.getActions() }
-        : (state as TState & TActions);
+  const selected = useMemo(
+    () =>
+      selector(
+        "getActions" in store
+          ? { ...state, ...store.getActions() }
+          : (state as TState & TActions)
+      ),
+    [state, selector]
+  );
 
-    return selector(stateWithActions);
-  }, [state, selector]);
+  useDebugValueReact(selected);
+
+  return selected;
+};
+
+/**
+ * A custom React hook that provides state and a setter function from a custom store.
+ *
+ * @template TState - The type representing the shape of the store's state.
+ * @param {Store<TState>} store - The store instance to subscribe to.
+ * @returns {[TState, (value: SetStateAction<TState>) => void]} - An array containing the current state and a setter function.
+ *
+ */
+export const useState = <TState>(
+  store: Store<TState>
+): [TState, (value: SetStateAction<TState>) => void] => {
+  const selectedState = useSyncExternalStoreReact(
+    store.subscribe,
+    store.get,
+    store.getInitialState
+  );
+  useDebugValueReact(selectedState);
+
+  return [selectedState, store.set];
 };
