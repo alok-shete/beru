@@ -5,7 +5,7 @@ import {
   DevToolsMessage,
   DevtoolsState,
   DevtoolsStore,
-  StoreState
+  StoreState,
 } from "../../utils/types";
 
 export function devtoolsImpl<S extends BaseStore<any>>(

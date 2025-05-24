@@ -29,7 +29,7 @@
     "url": "git+https://github.com/alok-shete/beru.git"
   },
   "scripts": {
-    "format": "prettier 'src/**/*' 'test/**/*'  --write",
+    "format": "prettier 'src/**/*' 'test/**/*' 'examples/**/*'  --write",
     "test": "vitest --silent=false --watch=false ",
     "ui-test": " vitest --ui",
     "prebuild": "rm -rf dist",

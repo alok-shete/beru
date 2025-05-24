@@ -2,7 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { create } from "beru";
 
-
 const useName = create("");
 
 function NameInput() {
@@ -10,7 +9,7 @@ function NameInput() {
   return (
     <div>
       <h2>Hello, {name || "Stranger"}!</h2>
-      <input value={name} onChange={e => setName(e.target.value)} />
+      <input value={name} onChange={(e) => setName(e.target.value)} />
     </div>
   );
 }

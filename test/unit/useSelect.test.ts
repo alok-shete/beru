@@ -39,11 +39,10 @@ describe("useSelect hook", () => {
 
     const { result } = renderHook(() =>
       useSelect(store, (s) => {
-
-        return ({
+        return {
           count: s.count,
           inc: s.inc,
-        })
+        };
       })
     );
 
