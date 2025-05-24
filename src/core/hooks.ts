@@ -19,18 +19,20 @@ const useSyncExternalStoreReact = <TState>(
 ) => useSyncExternalStore(store.subscribe, store.get, store.getInitial);
 
 /**
- * A custom hook that subscribes to a store and allows selecting a slice of state, with optional actions, using a selector function.
+ * A hook that provides a reactive subscription to a custom store with optional selector support.
  *
- * @template TState - The type representing the shape of the store's state.
- * @template TActions - The type representing the actions of the store. Default is `Record<string, unknown>`.
- * @template TSelected - The type representing the selected slice of state. Default is `TState & TActions`.
+ * @template TStore - The store type, which can either be a basic `Store` or an enhanced `StoreWithActions`.
+ * @template TSelected - The return type of the selector. Defaults to the full state snapshot (`StoreSnapshot<TStore>`).
  *
- * @param {Store<TState> | StoreWithActions<TState, TActions>} store - The store object to subscribe to, which can either be a basic store or a store with actions.
- * @param {Selector<TState & TActions, TSelected>} [selector] - A function to select a slice of the store's state. Defaults to selecting the entire state.
- * @returns {TSelected} - The selected slice of state.
+ * @param {TStore} store - The store instance to subscribe to.
+ * @param {Selector<StoreSnapshot<TStore>, TSelected>} [selector] - An optional selector function to extract a slice of the state. Defaults to identity function returning the whole state.
  *
+ * @returns {TSelected} - The selected state slice, optionally enriched with actions if the store has them.
+ *
+ * @example
+ * const counter = useSelect(counterStore, state => state.count);
+ * const { count, increment } = useSelect(counterStore);
  */
-
 export const useSelect = <
   TStore extends Store<ANY> | StoreWithActions<ANY, ANY>,
   TSelected = StoreSnapshot<TStore>,
@@ -54,12 +56,17 @@ export const useSelect = <
 };
 
 /**
- * A custom React hook that provides state and a setter function from a custom store.
+ * A hook that returns the current state and a setter function from a custom store.
  *
- * @template TState - The type representing the shape of the store's state.
+ * @template TState - The type of the store's state.
+ *
  * @param {Store<TState>} store - The store instance to subscribe to.
- * @returns {[TState, (value: SetStateAction<TState>) => void]} - An array containing the current state and a setter function.
  *
+ * @returns {[TState, (value: SetStateAction<TState>) => void]} - A tuple with the current state and a function to update it.
+ *
+ * @example
+ * const [count, setCount] = useState(counterStore);
+ * setCount(prev => prev + 1);
  */
 export const useState = <TState>(
   store: Store<TState>

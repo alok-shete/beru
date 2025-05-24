@@ -33,11 +33,26 @@ const createBaseStore = <TState>(initialState: TState): BaseStore<TState> => {
 };
 
 /**
- * Creates a new store with a given initial state and provides the capability to extend it with custom actions.
+ * Creates a new reactive store with the given initial state.
  *
- * @template TState - The type representing the shape of the initial state.
- * @param {TState} initialState - The initial state of the store. This is the default state that will be managed and updated within the store.
- * @returns {Store<TState>} - A store object that contains state management utilities and an optional method to extend the store with actions.
+ * This store provides state subscription and update capabilities, and can optionally be extended
+ * with custom actions using the `withActions` method.
+ *
+ * @template TState - The shape of the store's state.
+ *
+ * @param {TState} initialState - The initial state that the store will manage.
+ *
+ * @returns {Store<TState>} - A store object with hooks for accessing and updating state,
+ * and a `withActions` method to enhance the store with custom actions.
+ *
+ * @example
+ * const useCounterStore = create({ count: 0 });
+ * const [count, setCount] = useExtendedStore();
+ * setCount(prev => ({ count: prev.count + 1 }));
+ *
+ * const useExtendedStore = useExtendedStore.withActions(store => ({
+ *   increment: () => store.set(prev => ({ count: prev.count + 1 })),
+ * }));
  */
 export const create = <TState>(initialState: TState): Store<TState> => {
   const base = createBaseStore(initialState);
@@ -45,11 +60,21 @@ export const create = <TState>(initialState: TState): Store<TState> => {
 
   Object.assign(store, base, {
     /**
-     * Extends the store with custom actions, allowing the store to be enhanced with new functionality.
+     * Enhances the store by attaching custom action methods that can use and modify the store's state.
      *
-     * @template TActions - The type representing the actions to be added to the store.
-     * @param {function} createActions - A function that takes the store as an argument and returns an object of actions.
-     * @returns {StoreWithActions<TState & {}, TActions>} - The extended store with both state management and actions.
+     * @template TActions - The shape of the custom actions object.
+     *
+     * @param {(store: BaseStore<TState>) => TActions} createActions - A function that receives the base store and returns an object containing action methods.
+     *
+     * @returns {StoreWithActions<TState & {}, TActions>} - The store extended with typed actions alongside state access and management utilities.
+     *
+     * @example
+     * const useExtendedStore = store.withActions(store => ({
+     *   increment: () => store.set(prev => ({ count: prev.count + 1 })),
+     * }));
+     *
+     * const { count, increment } = useExtendedStore();
+     * increment();
      */
     withActions: <TActions extends AnyRecord>(
       createActions: (store: BaseStore<TState>) => TActions
