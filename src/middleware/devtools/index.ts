@@ -5,13 +5,14 @@ import {
   DevToolsMessage,
   DevtoolsState,
   DevtoolsStore,
+  StoreState
 } from "../../utils/types";
 
-export function devtoolsImpl<T, S extends BaseStore<T>>(
+export function devtoolsImpl<S extends BaseStore<any>>(
   store: S,
   config?: DevtoolsConfig
 ) {
-  const devtoolsState: DevtoolsState<T> = {
+  const devtoolsState: DevtoolsState<StoreState<S>> = {
     initialState: store.get(),
     currentState: store.get(),
     actionsHistory: [],
@@ -109,7 +110,7 @@ export function devtoolsImpl<T, S extends BaseStore<T>>(
     }
   );
 
-  store.subscribe((state: T) => {
+  store.subscribe((state: StoreState<S>) => {
     if (skipNextUpdate) {
       skipNextUpdate = false;
       return;

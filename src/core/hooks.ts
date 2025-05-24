@@ -4,7 +4,13 @@ import {
   useMemo,
   useDebugValue,
 } from "react";
-import { Store, Selector, StoreWithActions, ANY } from "../utils/types";
+import {
+  Store,
+  Selector,
+  StoreWithActions,
+  ANY,
+  StoreSnapshot,
+} from "../utils/types";
 
 const useDebugValueReact = useDebugValue;
 
@@ -24,23 +30,20 @@ const useSyncExternalStoreReact = <TState>(
  * @returns {TSelected} - The selected slice of state.
  *
  */
+
 export const useSelect = <
-  TState,
-  TActions extends Record<string, ANY> = Record<string, unknown>,
-  TSelected = TState & TActions,
+  TStore extends Store<ANY> | StoreWithActions<ANY, ANY>,
+  TSelected = StoreSnapshot<TStore>,
 >(
-  store: Store<TState> | StoreWithActions<TState & {}, TActions>,
-  selector: Selector<TState & TActions, TSelected> = (state) =>
-    state as TSelected
+  store: TStore,
+  selector: Selector<StoreSnapshot<TStore>, TSelected> = (state) => state
 ): TSelected => {
   const state = useSyncExternalStoreReact(store);
 
   const selected = useMemo(
     () =>
       selector(
-        "getActions" in store
-          ? { ...state, ...store.getActions() }
-          : (state as TState & TActions)
+        "getActions" in store ? { ...state, ...store.getActions() } : state
       ),
     [state, selector]
   );

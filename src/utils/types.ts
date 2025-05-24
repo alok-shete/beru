@@ -114,7 +114,7 @@ interface StoreHook<TState> {
  * It provides actions and selectors to manipulate and select state.
  */
 interface StoreWithActions<TState extends AnyRecord, TActions extends AnyRecord>
-  extends Omit<BaseStore<TState>, "select">,
+  extends BaseStore<TState>,
     StoreHook<TState & TActions> {
   /**
    * Returns the actions for the store.
@@ -157,6 +157,22 @@ export type StorageInterface = {
  * A storage provider can be either a `StorageInterface` or a function returning a `StorageInterface`.
  */
 type StorageProvider = StorageInterface | (() => StorageInterface);
+
+type StoreSnapshot<T> =
+  T extends StoreWithActions<infer S, infer A>
+    ? S & A
+    : T extends Store<infer S>
+      ? S
+      : never;
+
+type StoreState<T> =
+  T extends StoreWithActions<infer S, any>
+    ? S
+    : T extends Store<infer S>
+      ? S
+      : never;
+
+type StoreActions<T> = T extends StoreWithActions<any, infer A> ? A : never;
 
 /**
  * Configuration options for persisting the store state.
@@ -370,4 +386,7 @@ export type {
   DevtoolsStore,
   DevtoolsState,
   DevtoolsConfig,
+  StoreSnapshot,
+  StoreState,
+  StoreActions,
 };

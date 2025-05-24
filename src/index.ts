@@ -6,6 +6,9 @@ import {
   StoreWithActions,
   Store,
   AnyRecord,
+  StoreActions,
+  StoreSnapshot,
+  StoreState,
 } from "./utils/types";
 import { create } from "./core/store";
 import { useSelect, useState } from "./core/hooks";
@@ -22,6 +25,9 @@ export type {
   StoreWithActions,
   Store,
   AnyRecord,
+  StoreActions,
+  StoreSnapshot,
+  StoreState,
 };
 
 export default Beru;

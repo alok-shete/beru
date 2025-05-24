@@ -10,6 +10,7 @@ import {
   PersistConfig,
   PersistentStore,
   StorageInterface,
+  StoreState,
 } from "../../../utils/types";
 
 /**
@@ -22,9 +23,9 @@ import {
  * @param {PersistConfig<T>} config - Configuration for persistence such as storage key, debounce time, migration, etc.
  * @returns {PersistentStore<typeof store>} The persistent store, which includes methods for hydration, disposal, and clearing.
  */
-export function persist<T, S extends BaseStore<T>>(
+export function persist<S extends BaseStore<any>>(
   store: S,
-  config: PersistConfig<T>
+  config: PersistConfig<StoreState<S>>
 ): PersistentStore<S> {
   const {
     name: storageKey,
@@ -34,8 +35,8 @@ export function persist<T, S extends BaseStore<T>>(
     deserialize = JSON.parse,
     migrate = <A = ANY>(state: A, persistedVersion: number) =>
       persistedVersion === version ? state : null,
-    partial = (state: T) => state,
-    merge = (initialState: T, persistedState: T) =>
+    partial = (state) => state,
+    merge = (initialState, persistedState) =>
       typeof initialState === "object" && typeof persistedState === "object"
         ? Object.assign({}, initialState, persistedState)
         : persistedState,
@@ -63,7 +64,7 @@ export function persist<T, S extends BaseStore<T>>(
     }
   };
 
-  const persistStateToStorage = async (state: T) => {
+  const persistStateToStorage = async (state: StoreState<S>) => {
     try {
       const serialized = serialize({ state: partial(state), version });
       await getStorageInstance().setItem(storageKey, serialized);
@@ -80,7 +81,9 @@ export function persist<T, S extends BaseStore<T>>(
         const migratedState = migrate(storedState, storedVersion);
 
         if (migratedState) {
-          store.set(merge(originalGet(), migratedState) as T & AnyRecord);
+          store.set(
+            merge(originalGet(), migratedState) as StoreState<S> & AnyRecord
+          );
         }
       } catch (error) {
         onError("migration", error);
@@ -109,7 +112,7 @@ export function persist<T, S extends BaseStore<T>>(
     }
   };
 
-  const scheduleStatePersistence = (data: T) => {
+  const scheduleStatePersistence = (data: StoreState<S>) => {
     if (persistenceTimer) clearTimeout(persistenceTimer);
     persistenceTimer = setTimeout(() => {
       persistStateToStorage(data);
