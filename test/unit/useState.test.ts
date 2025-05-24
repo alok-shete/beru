@@ -24,14 +24,14 @@ describe("useState (custom hook)", () => {
     expect(state).toEqual({ count: 2 });
   });
 
-  it("should respect getInitialState fallback (SSR)", () => {
+  it("should respect initial fallback (SSR)", () => {
     const store = create({ count: 42 });
 
     const { result } = renderHook(() => useState(store));
 
     const [state] = result.current;
     expect(state).toEqual({ count: 42 });
-    expect(store.getInitialState()).toEqual({ count: 42 });
+    expect(store.getInitial()).toEqual({ count: 42 });
   });
 
   it("should provide a stable setState reference", () => {
