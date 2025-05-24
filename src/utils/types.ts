@@ -45,7 +45,7 @@ interface BaseStore<TState> {
    *
    * @returns The initial state of the store.
    */
-  getInitialState: () => TState;
+  getInitial: () => TState;
 
   /**
    * Updates the state with the provided action (value or function).
@@ -296,7 +296,7 @@ type DevToolsFeatures = {
 interface DevtoolsConfig {
   name?: string;
   features?: DevToolsFeatures;
-  enabled?:boolean
+  enabled?: boolean;
 }
 
 type DevToolsPayload =
@@ -369,5 +369,5 @@ export type {
   DevToolsMessage,
   DevtoolsStore,
   DevtoolsState,
-  DevtoolsConfig
+  DevtoolsConfig,
 };

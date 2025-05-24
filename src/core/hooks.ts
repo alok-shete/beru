@@ -6,8 +6,11 @@ import {
 } from "react";
 import { Store, Selector, StoreWithActions, ANY } from "../utils/types";
 
-const useSyncExternalStoreReact = useSyncExternalStore;
 const useDebugValueReact = useDebugValue;
+
+const useSyncExternalStoreReact = <TState>(
+  store: Store<TState> | StoreWithActions<TState & {}, {}>
+) => useSyncExternalStore(store.subscribe, store.get, store.getInitial);
 
 /**
  * A custom hook that subscribes to a store and allows selecting a slice of state, with optional actions, using a selector function.
@@ -30,11 +33,7 @@ export const useSelect = <
   selector: Selector<TState & TActions, TSelected> = (state) =>
     state as TSelected
 ): TSelected => {
-  const state = useSyncExternalStoreReact(
-    store.subscribe,
-    store.get,
-    store.getInitialState
-  );
+  const state = useSyncExternalStoreReact(store);
 
   const selected = useMemo(
     () =>
@@ -62,11 +61,7 @@ export const useSelect = <
 export const useState = <TState>(
   store: Store<TState>
 ): [TState, (value: SetStateAction<TState>) => void] => {
-  const selectedState = useSyncExternalStoreReact(
-    store.subscribe,
-    store.get,
-    store.getInitialState
-  );
+  const selectedState = useSyncExternalStoreReact(store);
   useDebugValueReact(selectedState);
 
   return [selectedState, store.set];

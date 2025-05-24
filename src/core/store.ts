@@ -16,7 +16,7 @@ const createBaseStore = <TState>(initialState: TState): BaseStore<TState> => {
 
   return {
     get: () => state,
-    getInitialState: () => initialState,
+    getInitial: () => initialState,
     set: (action) => {
       state =
         typeof action === "function"

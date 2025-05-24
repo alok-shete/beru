@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { create } from "../../src/index";
 
-import * as useStateModule from "../../src/core/useState";
-import * as useSelectModule from "../../src/core/useSelect";
+import * as hooks from "../../src/core/hooks";
 import { renderHook } from "@testing-library/react";
 
 describe("create store", () => {
@@ -61,7 +60,7 @@ describe("create store", () => {
   });
 
   it("should call useState when store is initialized", () => {
-    const mockUseState = vi.spyOn(useStateModule, "useState");
+    const mockUseState = vi.spyOn(hooks, "useState");
 
     const useName = create("Alok");
 
@@ -74,7 +73,7 @@ describe("create store", () => {
   });
 
   it("should call useSelect when extendedStore is used", () => {
-    const mockUseSelect = vi.spyOn(useSelectModule, "useSelect");
+    const mockUseSelect = vi.spyOn(hooks, "useSelect");
 
     const useCount = create({ count: 10 }).withActions((s) => ({
       add: () => s.set((prev) => ({ count: prev.count + 1 })),
@@ -94,7 +93,7 @@ describe("create store", () => {
     // Mutate state
     store.set({ count: 999 });
 
-    // Check getInitialState still returns the original
-    expect(store.getInitialState()).toEqual(initial);
+    // Check initial still returns the original
+    expect(store.getInitial()).toEqual(initial);
   });
 });
