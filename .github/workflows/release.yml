@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # Required for git operations
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,19 +37,25 @@ jobs:
 
       - name: Update package.json version
         run: |
-          # Use the clean version number without 'v' prefix
-          npm version $VERSION --no-git-tag-version
-          
-          # Configure git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Commit and push changes
-          git add package.json package-lock.json
-          git commit -m "chore: bump version to $VERSION"
-          
-          # Push to the default branch
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current package.json version: $CURRENT_VERSION"
+          echo "Release version: $VERSION"
+
+          if [ "$CURRENT_VERSION" != "$VERSION" ]; then
+            echo "Updating version to $VERSION"
+            npm version "$VERSION" --no-git-tag-version
+
+            # Configure git
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            # Commit and push changes
+            git add package.json package-lock.json
+            git commit -m "chore: bump version to $VERSION"
+            git push origin HEAD:${{ github.event.repository.default_branch }}
+          else
+            echo "Version already set to $VERSION — skipping version update."
+          fi
 
       - name: Build the package
         run: npm run build
