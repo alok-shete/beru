@@ -35,7 +35,8 @@
     "prebuild": "rm -rf dist",
     "test-coverage": "vitest run --coverage",
     "build": "tsup",
-    "publish": "echo 'not allowed to publish'"
+    "publish": "echo 'not allowed to publish'",
+    "example": "ts-node run-example.ts"
   },
   "files": [
     "dist",

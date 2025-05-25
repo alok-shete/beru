@@ -10,7 +10,8 @@ const useCountWithActions = useCount.withActions(({ set }) => ({
 }));
 
 export default function CounterWithActions() {
-  const { count, increment, decrement } = useCountWithActions();
+  const count = useCountWithActions((state) => state.count);
+  const { increment, decrement } = useCountWithActions();
   return (
     <div>
       <h2>Count: {count}</h2>
