@@ -3,6 +3,8 @@
 [![Build Size](https://img.shields.io/bundlephobia/minzip/beru?label=bundle%20size&style=flat&colorA=000000&colorB=000000)](https://bundlephobia.com/result?p=beru)
 [![Version](https://img.shields.io/npm/v/beru?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/beru)
 [![Downloads](https://img.shields.io/npm/dm/beru.svg?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/beru)
+[![Release NPM Package](https://img.shields.io/github/actions/workflow/status/alok-shete/beru/release.yml?label=Release%20NPM%20Package&style=flat&colorA=000000&colorB=000000)](https://github.com/alok-shete/beru/actions/workflows/release.yml)
+
 
 Beru is a small, simple, and type-safe state management solution for React and React Native. It offers efficient data persistence and seamless integration with various storage mechanisms. Designed to be lightweight and intuitive, Beru helps developers manage application state with ease and confidence.
 
