@@ -11,12 +11,24 @@ const useCountWithActions = useCount.withActions(({ set }) => ({
 
 export default function CounterWithActions() {
   const count = useCountWithActions((state) => state.count);
+  console.log("count", count);
   const { increment, decrement } = useCountWithActions();
   return (
-    <div>
-      <h2>Count: {count}</h2>
-      <button onClick={decrement}>-</button>
-      <button onClick={increment}>+</button>
+    <div
+      className="is-flex is-justify-content-center is-align-items-center"
+      style={{ height: "100vh" }}
+    >
+      <div className="box has-text-centered">
+        <h2 className="title is-3">Count: {count}</h2>
+        <div className="buttons is-centered">
+          <button className="button is-primary" onClick={() => increment()}>
+            -
+          </button>
+          <button className="button is-primary" onClick={() => decrement()}>
+            +
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
