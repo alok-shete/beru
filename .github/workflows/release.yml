@@ -7,12 +7,15 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write # Required for git operations
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -23,19 +26,30 @@ jobs:
       - name: Extract version from release tag
         id: extract_version
         run: |
-          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          # Remove 'v' prefix if present (e.g., v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
 
       - name: Install dependencies
-        run: npm ci -legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Update package.json version
         run: |
+          # Use the clean version number without 'v' prefix
           npm version $VERSION --no-git-tag-version
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Commit and push changes
           git add package.json package-lock.json
           git commit -m "chore: bump version to $VERSION"
-          git push
+          
+          # Push to the default branch
+          git push origin HEAD:${{ github.event.repository.default_branch }}
 
       - name: Build the package
         run: npm run build
