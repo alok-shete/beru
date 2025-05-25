@@ -35,7 +35,7 @@ jobs:
           git config user.email "github-actions@github.com"
           git add package.json package-lock.json
           git commit -m "chore: bump version to $VERSION"
-          git push origin HEAD
+          git push
 
       - name: Build the package
         run: npm run build
