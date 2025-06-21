@@ -90,9 +90,9 @@ interface Store<TState> extends BaseStore<TState> {
 }
 
 /**
- * A hook interface for accessing and selecting state from the store.
+ * A hook type for accessing and selecting state from the store.
  */
-interface StoreHook<TState> {
+type StoreHook<TState> = {
   /**
    * Accesses the entire state of the store.
    *
@@ -107,7 +107,18 @@ interface StoreHook<TState> {
    * @returns The selected part of the state.
    */
   <S = TState>(selector: (state: TState) => S): S;
-}
+
+  /**
+   * Accesses a specific part of the state using a selector function and custom equality check.
+   *
+   * @param selector - A function that extracts part of the state.
+   * @returns The selected part of the state.
+   */
+  <S = TState>(
+    selector: (state: TState) => S,
+    isEqual: (a: S, b: S) => boolean
+  ): S;
+};
 
 /**
  * Store with actions interface that extends `BaseStore` and `StoreHook`.

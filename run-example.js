@@ -8,7 +8,7 @@ const examplesDir = path.join(__dirname,'examples');
 
 function listExampleFolders() {
   try {
-    return fs.readdirSync(examplesDir).filter((name:string) => {
+    return fs.readdirSync(examplesDir).filter((name) => {
       const fullPath = path.join(examplesDir, name);
       return fs.statSync(fullPath).isDirectory();
     });
@@ -20,7 +20,7 @@ function listExampleFolders() {
 if (!exampleName) {
   console.error("❌ Please provide an example name. Example: yarn run example counter");
   console.log("📂 Available examples:");
-  listExampleFolders().forEach((name:string) => console.log(" -", name));
+  listExampleFolders().forEach((name) => console.log(" -", name));
   process.exit(1);
 }
 
@@ -29,7 +29,7 @@ const examplePath = path.join(examplesDir, exampleName);
 if (!fs.existsSync(examplePath) || !fs.statSync(examplePath).isDirectory()) {
   console.error(`❌ Example "${exampleName}" does not exist in /examples.`);
   console.log("📂 Available examples:");
-  listExampleFolders().forEach((name:string) => console.log(" -", name));
+  listExampleFolders().forEach((name) => console.log(" -", name));
   process.exit(1);
 }
 

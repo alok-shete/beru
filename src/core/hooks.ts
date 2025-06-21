@@ -1,9 +1,4 @@
-import {
-  SetStateAction,
-  useSyncExternalStore,
-  useMemo,
-  useDebugValue,
-} from "react";
+import { SetStateAction, useDebugValue, useCallback } from "react";
 import {
   Store,
   Selector,
@@ -11,12 +6,9 @@ import {
   ANY,
   StoreSnapshot,
 } from "../utils/types";
+import { useSyncExternalStoreWithSelector } from "../utils/useSyncExternalStoreWithSelector";
 
 const useDebugValueReact = useDebugValue;
-
-const useSyncExternalStoreReact = <TState>(
-  store: Store<TState> | StoreWithActions<TState & {}, {}>
-) => useSyncExternalStore(store.subscribe, store.get, store.getInitial);
 
 /**
  * A hook that provides a reactive subscription to a custom store with optional selector support.
@@ -38,16 +30,26 @@ export const useSelect = <
   TSelected = StoreSnapshot<TStore>,
 >(
   store: TStore,
-  selector: Selector<StoreSnapshot<TStore>, TSelected> = (state) => state
+  selector: Selector<StoreSnapshot<TStore>, TSelected> = (state) => state,
+  isEqual?: (a: TSelected, b: TSelected) => boolean
 ): TSelected => {
-  const state = useSyncExternalStoreReact(store);
+  const createSelector = useCallback(
+    (state: StoreSnapshot<TStore>) => {
+      return selector(
+        "getActions" in store
+          ? Object.assign({}, store.getActions(), state)
+          : state
+      );
+    },
+    [store]
+  );
 
-  const selected = useMemo(
-    () =>
-      selector(
-        "getActions" in store ? { ...state, ...store.getActions() } : state
-      ),
-    [state, selector]
+  const selected = useSyncExternalStoreWithSelector(
+    store.subscribe,
+    store.get,
+    store.getInitial,
+    createSelector,
+    isEqual
   );
 
   useDebugValueReact(selected);
@@ -69,9 +71,16 @@ export const useSelect = <
  * setCount(prev => prev + 1);
  */
 export const useState = <TState>(
-  store: Store<TState>
+  store: Store<TState>,
+  isEqual?: (a: TState, b: TState) => boolean
 ): [TState, (value: SetStateAction<TState>) => void] => {
-  const selectedState = useSyncExternalStoreReact(store);
+  const selectedState = useSyncExternalStoreWithSelector(
+    store.subscribe,
+    store.get,
+    store.getInitial,
+    (state) => state,
+    isEqual
+  );
   useDebugValueReact(selectedState);
 
   return [selectedState, store.set];

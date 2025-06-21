@@ -15,6 +15,7 @@ Beru is a small, simple, and type-safe state management solution for React and R
 - **Minimal Bundle Size:** Optimized for performance with a tiny footprint
 - **No Dependencies:** Zero external dependencies for maximum compatibility
 - **Selector Support:** Efficient component re-renders by subscribing only to needed state
+- **Custom Equality:** Control re-renders with custom equality comparisons for complex state
 - **Action Creators:** Organize state updates with custom action functions
 - **Persistence:** Optional state persistence with flexible storage options
 - **React & React Native:** Works seamlessly in all React environments
@@ -339,7 +340,82 @@ const { value1, value2 } = useStore(state => ({
 }));
 ```
 
-### Persistence API
+### Custom Equality Comparison
+
+For advanced use cases, you can provide a custom equality function as the second parameter to control when components re-render:
+
+```tsx
+// Basic usage with custom equality
+const count = useCount(
+  (state) => state.count,
+  (a, b) => a === b // Custom equality function
+);
+
+// Example: Deep comparison for complex objects
+const user = useStore(
+  (state) => state.user,
+  (prevUser, nextUser) => {
+    return prevUser.id === nextUser.id && 
+           prevUser.name === nextUser.name &&
+           prevUser.email === nextUser.email;
+  }
+);
+
+// Example: Shallow comparison for arrays/objects
+import { shallowEqual } from 'beru/utils'; // If available, or use custom implementation
+
+const todos = useTodos(
+  (state) => state.todos,
+  shallowEqual
+);
+
+// Example: Custom comparison for specific use cases
+const filteredItems = useStore(
+  (state) => state.items.filter(item => item.isActive),
+  (prevItems, nextItems) => {
+    // Only re-render if the filtered results actually changed
+    if (prevItems.length !== nextItems.length) return false;
+    return prevItems.every((item, index) => item.id === nextItems[index].id);
+  }
+);
+```
+
+### Selector Usage Patterns
+
+```tsx
+// Pattern 1: Simple value selection
+const count = useCount(state => state.count);
+
+// Pattern 2: Multiple values with default equality
+const { loading, error } = useStore(state => ({
+  loading: state.loading,
+  error: state.error
+}));
+
+// Pattern 3: Computed values with custom equality
+const expensiveComputation = useStore(
+  state => {
+    // Some expensive computation based on state
+    return state.items
+      .filter(item => item.isVisible)
+      .sort((a, b) => a.priority - b.priority)
+      .slice(0, 10);
+  },
+  (prev, next) => {
+    // Custom equality to prevent unnecessary recomputations
+    return prev.length === next.length && 
+           prev.every((item, i) => item.id === next[i].id);
+  }
+);
+
+// Pattern 4: Actions with custom equality (rarely needed)
+const actions = useStore(
+  state => ({ increment: state.increment, decrement: state.decrement }),
+  () => true // Actions typically don't change, so always equal
+);
+```
+
+## Persistence API
 
 #### `persist(store, config)`
 

@@ -4,7 +4,6 @@ import {
   runImmediately,
 } from "../../../utils/common";
 import {
-  ANY,
   AnyRecord,
   BaseStore,
   PersistConfig,
@@ -33,7 +32,7 @@ export function persist<S extends BaseStore<any>>(
     version = 0,
     serialize = JSON.stringify,
     deserialize = JSON.parse,
-    migrate = <A = ANY>(state: A, persistedVersion: number) =>
+    migrate = (state, persistedVersion) =>
       persistedVersion === version ? state : null,
     partial = (state) => state,
     merge = (initialState, persistedState) =>
@@ -50,7 +49,7 @@ export function persist<S extends BaseStore<any>>(
   let persistenceTimer: ReturnType<typeof setTimeout> | null = null;
   let storeUnsubscribe: (() => void) | null = null;
   let isStoreInitialized = false;
-  let pendingHydration: Promise<void>;
+  let pendingHydration: Promise<void> | null = null;
   const originalGet = store.get;
 
   const getStorageInstance = (): StorageInterface => {
@@ -140,13 +139,31 @@ export function persist<S extends BaseStore<any>>(
       }
     });
 
-  store.get = () => {
-    if (!isStoreInitialized) {
-      isStoreInitialized = true;
-      if (!skipHydrate) hydrate();
+  if (!isStoreInitialized) {
+    isStoreInitialized = true;
+    if (!skipHydrate) hydrate();
+  }
+
+  ///todo: need refactor
+  const flush = async (): Promise<void> => {
+    if (persistenceTimer) {
+      clearTimeout(persistenceTimer);
+      persistenceTimer = null;
     }
-    return originalGet();
+
+    const currentState = store.get();
+    await persistStateToStorage(currentState);
   };
 
-  return Object.assign(store, { hydrate, dispose, clear });
+  return Object.assign(store, {
+    hydrate,
+    dispose,
+    clear,
+    flush,
+    waitForPersistence: () => pendingHydration,
+    forceHydrate: () => {
+      pendingHydration = null;
+      return hydrate();
+    },
+  });
 }
