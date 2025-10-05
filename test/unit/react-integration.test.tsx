@@ -1,18 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import React, { useState as useReactState, useEffect, StrictMode } from "react";
-import { create, useSelect, useState } from "../../src";
+import { create, Store, useSelect, useState } from "../../src";
+import {
+  ANY,
+  Selector,
+  StoreSnapshot,
+  StoreWithActions,
+} from "../../src/utils/types";
 
 // Test component helpers
-const TestComponent: React.FC<{ store: any; selector?: any }> = ({
+const TestComponent = <
+  TStore extends Store<ANY> | StoreWithActions<ANY, ANY>,
+  TSelected = StoreSnapshot<TStore>,
+>({
   store,
   selector,
+}: {
+  store: TStore;
+  selector?: Selector<StoreSnapshot<TStore>, TSelected>;
 }) => {
-  const state = selector ? useSelect(store, selector) : useSelect(store);
+  const sel = selector ?? ((state: StoreSnapshot<TStore>) => state);
+  const state = useSelect(store, sel);
   return <div data-testid="state">{JSON.stringify(state)}</div>;
 };
 
-const TestComponentWithState: React.FC<{ store: any }> = ({ store }) => {
+const TestComponentWithState = ({
+  store,
+}: {
+  store: Store<{
+    count: number;
+  }>;
+}) => {
   const [state, setState] = useState(store);
   return (
     <div>
