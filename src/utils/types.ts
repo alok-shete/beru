@@ -305,6 +305,30 @@ type PersistentStore<S> = S & {
    * @returns A promise that resolves when the state is cleared.
    */
   clear: () => Promise<void>;
+
+  /**
+   * Flushes any pending persistence operations to storage.
+   * Ensures all queued writes are completed before resolving.
+   *
+   * @returns A promise that resolves when all pending operations are flushed.
+   */
+  flush: () => Promise<void>;
+
+  /**
+   * Waits for any ongoing persistence operations to complete.
+   * Returns null if no persistence operations are in progress.
+   *
+   * @returns A promise that resolves when persistence is complete, or null if no operations are pending.
+   */
+  waitForPersistence: () => Promise<void> | null;
+
+  /**
+   * Forces the store to hydrate from storage, bypassing any existing state.
+   * This will reload the persisted state even if the store has already been hydrated.
+   *
+   * @returns A promise if the hydration process is asynchronous, otherwise void.
+   */
+  forceHydrate: () => void | Promise<void>;
 };
 
 type DevToolsFeatures = {
