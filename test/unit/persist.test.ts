@@ -152,8 +152,8 @@ describe("persist", () => {
       const persistent = persist(store, {
         name: "test-key",
         storage,
-        serialize: customSerialize,
-        deserialize: customDeserialize,
+        serialize: customSerialize as any,
+        deserialize: customDeserialize as any,
       });
 
       persistent.hydrate();
@@ -516,7 +516,7 @@ describe("persist", () => {
       const persistent = persist(store, {
         name: "test-key",
         storage,
-        migrate,
+        migrate: migrate as any,
       });
 
       persistent.hydrate();
