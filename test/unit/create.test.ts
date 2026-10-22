@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { create } from "../../src/index";
+import { useSelect } from "../../src";
 
 import * as hooks from "../../src/core/hooks";
 import { renderHook } from "@testing-library/react";
@@ -45,6 +46,17 @@ describe("create store", () => {
 
     store.getActions().decrement();
     expect(store.get().count).toBe(0);
+  });
+
+  it("should reject action names that collide with state properties", () => {
+    const store = create({ reset: "state" }).withActions((s) => ({
+      reset: () => s.set({ reset: "reset" }),
+    }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => renderHook(() => useSelect(store))).toThrow(
+      'Action name "reset" conflicts with a state property'
+    );
   });
 
   it("should select from extended store including actions", () => {

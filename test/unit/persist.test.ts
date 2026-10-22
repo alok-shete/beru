@@ -265,6 +265,39 @@ describe("persist", () => {
       persistent.hydrate();
       expect(store.get()).toBe("persisted");
     });
+
+    it("preserves array state shapes during the default merge", () => {
+      const storage = fakeStorage();
+      const store = create([1, 2]);
+      storage.getItem.mockReturnValueOnce(
+        JSON.stringify({ state: [10, 20], version: 0 })
+      );
+
+      persist(store, { name: "array-state", storage });
+
+      expect(store.get()).toEqual([10, 20]);
+      expect(Array.isArray(store.get())).toBe(true);
+    });
+
+    it("hydrates falsy primitive values", () => {
+      const values = [
+        { initial: 1, persisted: 0 },
+        { initial: true, persisted: false },
+        { initial: "initial", persisted: "" },
+      ];
+
+      for (const { initial, persisted } of values) {
+        const storage = fakeStorage();
+        const store = create(initial);
+        storage.getItem.mockReturnValueOnce(
+          JSON.stringify({ state: persisted, version: 0 })
+        );
+
+        persist(store, { name: "falsy-state", storage });
+
+        expect(store.get()).toBe(persisted);
+      }
+    });
   });
 
   describe("Storage handling", () => {

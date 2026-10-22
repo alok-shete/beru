@@ -124,6 +124,50 @@ describe("Concurrent Operations and Race Conditions", () => {
   });
 
   describe("Concurrent Persistence Operations", () => {
+    it("should serialize asynchronous writes so the latest state is stored last", async () => {
+      vi.useFakeTimers();
+      const persisted = new Map<string, string>();
+      const pendingWrites: Array<() => void> = [];
+      const storage = {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(
+          (key: string, value: string) =>
+            new Promise<void>((resolve) => {
+              pendingWrites.push(() => {
+                persisted.set(key, value);
+                resolve();
+              });
+            })
+        ),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "ordered-writes",
+        storage,
+        debounceTime: 10,
+      });
+
+      store.set({ count: 1 });
+      vi.advanceTimersByTime(10);
+      await Promise.resolve();
+      expect(pendingWrites).toHaveLength(1);
+
+      store.set({ count: 2 });
+      vi.advanceTimersByTime(10);
+      await Promise.resolve();
+      expect(pendingWrites).toHaveLength(1);
+
+      pendingWrites[0]();
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      expect(pendingWrites).toHaveLength(2);
+
+      pendingWrites[1]();
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+
+      expect(JSON.parse(persisted.get("ordered-writes")!).state.count).toBe(2);
+    });
+
     it("should handle concurrent hydration attempts", async () => {
       const storage = fakeAsyncStorage();
       const store = create({ count: 0 });

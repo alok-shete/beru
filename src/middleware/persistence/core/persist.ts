@@ -12,6 +12,12 @@ import {
   StoreState,
 } from "../../../utils/types";
 
+const isPlainObject = (value: unknown): value is AnyRecord => {
+  if (value === null || typeof value !== "object") return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+};
+
 /**
  * Persist a store or a store with actions to a specified storage.
  *
@@ -36,7 +42,7 @@ export function persist<S extends BaseStore<any>>(
       persistedVersion === version ? state : null,
     partial = (state) => state,
     merge = (initialState, persistedState) =>
-      typeof initialState === "object" && typeof persistedState === "object"
+      isPlainObject(initialState) && isPlainObject(persistedState)
         ? Object.assign({}, initialState, persistedState)
         : persistedState,
     storage,
@@ -50,6 +56,15 @@ export function persist<S extends BaseStore<any>>(
   let storeUnsubscribe: (() => void) | null = null;
   let isStoreInitialized = false;
   let pendingHydration: Promise<void> | null = null;
+  let hydrationPending = false;
+  let pendingWrites: Promise<void> = Promise.resolve();
+  let pendingPersistenceOperations = 0;
+  let isProcessingPersistenceQueue = false;
+  const persistenceQueue: Array<{
+    operation: () => Promise<void> | void;
+    resolve: () => void;
+    reject: (reason?: unknown) => void;
+  }> = [];
   const originalGet = store.get;
 
   const getStorageInstance = (): StorageInterface => {
@@ -72,14 +87,59 @@ export function persist<S extends BaseStore<any>>(
     }
   };
 
-  const hydrateFromStoredData = (storedData: string | null) => {
+  const enqueuePersistenceOperation = (
+    operation: () => Promise<void> | void
+  ) => {
+    pendingPersistenceOperations++;
+    pendingWrites = new Promise<void>((resolve, reject) => {
+      persistenceQueue.push({ operation, resolve, reject });
+    });
+    const processQueue = () => {
+      const next = persistenceQueue.shift();
+      if (!next) {
+        isProcessingPersistenceQueue = false;
+        return;
+      }
+
+      isProcessingPersistenceQueue = true;
+      const finish = (error?: unknown, failed = false) => {
+        pendingPersistenceOperations--;
+        if (failed) next.reject(error);
+        else next.resolve();
+        processQueue();
+      };
+
+      try {
+        Promise.resolve(next.operation()).then(
+          () => finish(),
+          (error) => finish(error, true)
+        );
+      } catch (error) {
+        finish(error, true);
+      }
+    };
+    if (!isProcessingPersistenceQueue) processQueue();
+    return pendingWrites;
+  };
+
+  const enqueuePersistence = (state: StoreState<S>) =>
+    enqueuePersistenceOperation(() => persistStateToStorage(state));
+
+  const hydrateFromStoredData = (
+    storedData: string | null,
+    shouldApplyHydration: () => boolean
+  ) => {
     if (storedData) {
       try {
         const { state: storedState, version: storedVersion } =
           deserialize(storedData);
         const migratedState = migrate(storedState, storedVersion);
 
-        if (migratedState) {
+        if (
+          migratedState !== null &&
+          migratedState !== undefined &&
+          shouldApplyHydration()
+        ) {
           store.set(
             merge(originalGet(), migratedState) as StoreState<S> & AnyRecord
           );
@@ -94,27 +154,74 @@ export function persist<S extends BaseStore<any>>(
   const hydrate = () => {
     if (pendingHydration instanceof Promise) return pendingHydration;
 
+    hydrationPending = true;
+    let isInitialNotification = true;
+    let hasUpdatedDuringHydration = false;
+    const unsubscribeFromHydrationTracking = store.subscribe(() => {
+      if (isInitialNotification) {
+        isInitialNotification = false;
+      } else {
+        hasUpdatedDuringHydration = true;
+      }
+    });
+    const applyHydration = (storedData: string | null) => {
+      try {
+        hydrateFromStoredData(
+          storedData,
+          () => !hasUpdatedDuringHydration
+        );
+      } finally {
+        unsubscribeFromHydrationTracking();
+      }
+    };
+
     try {
       const storageInstance = getStorageInstance();
       const storedData = storageInstance.getItem(storageKey);
 
       if (storedData instanceof Promise) {
-        pendingHydration = runImmediately(async () =>
-          hydrateFromStoredData(await storedData)
-        );
+        pendingHydration = runImmediately(async () => {
+          try {
+            let resolvedData: string | null;
+            try {
+              resolvedData = await storedData;
+            } catch (error) {
+              unsubscribeFromHydrationTracking();
+              try {
+                onError("storage", error);
+              } finally {
+                initializeSubscription();
+              }
+              return;
+            }
+            applyHydration(resolvedData);
+          } finally {
+            hydrationPending = false;
+          }
+        });
         return pendingHydration;
       } else {
-        return hydrateFromStoredData(storedData);
+        try {
+          return applyHydration(storedData);
+        } finally {
+          hydrationPending = false;
+        }
       }
     } catch (error) {
-      onError("storage", error);
+      hydrationPending = false;
+      unsubscribeFromHydrationTracking();
+      try {
+        onError("storage", error);
+      } finally {
+        initializeSubscription();
+      }
     }
   };
 
   const scheduleStatePersistence = (data: StoreState<S>) => {
-    if (persistenceTimer) clearTimeout(persistenceTimer);
+    if (persistenceTimer !== null) clearTimeout(persistenceTimer);
     persistenceTimer = setTimeout(() => {
-      persistStateToStorage(data);
+      enqueuePersistence(data);
       persistenceTimer = null;
     }, debounceTime);
   };
@@ -127,17 +234,25 @@ export function persist<S extends BaseStore<any>>(
   const dispose = () => {
     storeUnsubscribe?.();
     storeUnsubscribe = null;
-    if (persistenceTimer) clearTimeout(persistenceTimer);
+    if (persistenceTimer !== null) clearTimeout(persistenceTimer);
   };
 
-  const clear = () =>
-    runImmediately(async () => {
-      try {
-        await getStorageInstance().removeItem(storageKey);
-      } catch (error) {
-        onError("clear", error);
-      }
-    });
+  const clear = () => {
+    if (persistenceTimer !== null) {
+      clearTimeout(persistenceTimer);
+      persistenceTimer = null;
+    }
+
+    return enqueuePersistenceOperation(() =>
+      runImmediately(async () => {
+        try {
+          await getStorageInstance().removeItem(storageKey);
+        } catch (error) {
+          onError("clear", error);
+        }
+      })
+    );
+  };
 
   if (!isStoreInitialized) {
     isStoreInitialized = true;
@@ -146,13 +261,13 @@ export function persist<S extends BaseStore<any>>(
 
   ///todo: need refactor
   const flush = async (): Promise<void> => {
-    if (persistenceTimer) {
+    if (persistenceTimer !== null) {
       clearTimeout(persistenceTimer);
       persistenceTimer = null;
     }
 
     const currentState = store.get();
-    await persistStateToStorage(currentState);
+    await enqueuePersistence(currentState);
   };
 
   return Object.assign(store, {
@@ -160,7 +275,14 @@ export function persist<S extends BaseStore<any>>(
     dispose,
     clear,
     flush,
-    waitForPersistence: () => pendingHydration,
+    waitForPersistence: () => {
+      const pending: Promise<void>[] = [];
+      if (hydrationPending && pendingHydration) pending.push(pendingHydration);
+      if (pendingPersistenceOperations > 0) pending.push(pendingWrites);
+      if (pending.length === 0) return null;
+      if (pending.length === 1) return pending[0];
+      return Promise.all(pending).then(() => undefined);
+    },
     forceHydrate: () => {
       pendingHydration = null;
       return hydrate();

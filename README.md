@@ -109,6 +109,8 @@ const Counter = () => {
 };
 ```
 
+Action names must not collide with state properties. Beru throws an error when a selector reads a store whose state and actions share an enumerable property name.
+
 ### Using Selectors
 
 ```tsx
@@ -383,6 +385,8 @@ const filteredItems = useStore(
 ## Persistence & Storage
 
 Beru supports state persistence for both web and React Native. By default, `localStorage` is used in browsers. For React Native, use a compatible storage (e.g., `@react-native-async-storage/async-storage`).
+
+If the storage read is asynchronous, state updates made before hydration completes take precedence over the stored snapshot. `clear()` cancels delayed writes and waits for already-started persistence operations before removing the storage key.
 
 ### Basic Persistence
 

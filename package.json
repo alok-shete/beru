@@ -36,7 +36,7 @@
     "format": "prettier 'src/**/*' 'test/**/*' 'examples/**/*'  --write",
     "test": "vitest --silent=false --watch=false ",
     "ui-test": " vitest --ui",
-    "prebuild": "rm -rf dist",
+    "prebuild": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "test-coverage": "vitest run --coverage",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",

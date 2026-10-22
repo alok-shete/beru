@@ -35,13 +35,22 @@ export const useSelect = <
 ): TSelected => {
   const createSelector = useCallback(
     (state: StoreSnapshot<TStore>) => {
-      return selector(
-        "getActions" in store
-          ? Object.assign({}, store.getActions(), state)
-          : state
+      if (!("getActions" in store)) return selector(state);
+
+      const actions = store.getActions();
+      const stateValue = Object(state);
+      const collision = Object.keys(actions).find((key) =>
+        Object.prototype.propertyIsEnumerable.call(stateValue, key)
       );
+      if (collision) {
+        throw new Error(
+          `Action name "${collision}" conflicts with a state property`
+        );
+      }
+
+      return selector(Object.assign({}, actions, state));
     },
-    [store]
+    [store, selector]
   );
 
   const selected = useSyncExternalStoreWithSelector(

@@ -336,6 +336,26 @@ describe("Selector Behavior Tests", () => {
 
       expect(result.current).toBe(5);
     });
+
+    it("should use a new selector when the selector prop changes without a store update", () => {
+      const store = create({ count: 1, name: "Alice" });
+      const selectCount = (state: { count: number; name: string }) =>
+        state.count;
+      const selectName = (state: { count: number; name: string }) =>
+        state.name;
+
+      const { result, rerender } = renderHook(
+        ({ selector }: { selector: typeof selectCount | typeof selectName }) =>
+          useSelect(store, selector),
+        { initialProps: { selector: selectCount } }
+      );
+
+      expect(result.current).toBe(1);
+
+      rerender({ selector: selectName });
+
+      expect(result.current).toBe("Alice");
+    });
   });
 
   describe("Store with Actions Integration", () => {
