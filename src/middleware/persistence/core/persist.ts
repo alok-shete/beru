@@ -56,7 +56,8 @@ export function persist<S extends BaseStore<any>>(
   let storeUnsubscribe: (() => void) | null = null;
   let isStoreInitialized = false;
   let pendingHydration: Promise<void> | null = null;
-  let hydrationPending = false;
+  let hydrationGeneration = 0;
+  const activeHydrations = new Set<Promise<void>>();
   let pendingWrites: Promise<void> = Promise.resolve();
   let pendingPersistenceOperations = 0;
   let isProcessingPersistenceQueue = false;
@@ -154,7 +155,7 @@ export function persist<S extends BaseStore<any>>(
   const hydrate = () => {
     if (pendingHydration instanceof Promise) return pendingHydration;
 
-    hydrationPending = true;
+    const generation = ++hydrationGeneration;
     let isInitialNotification = true;
     let hasUpdatedDuringHydration = false;
     const unsubscribeFromHydrationTracking = store.subscribe(() => {
@@ -168,7 +169,8 @@ export function persist<S extends BaseStore<any>>(
       try {
         hydrateFromStoredData(
           storedData,
-          () => !hasUpdatedDuringHydration
+          () =>
+            !hasUpdatedDuringHydration && generation === hydrationGeneration
         );
       } finally {
         unsubscribeFromHydrationTracking();
@@ -180,7 +182,7 @@ export function persist<S extends BaseStore<any>>(
       const storedData = storageInstance.getItem(storageKey);
 
       if (storedData instanceof Promise) {
-        pendingHydration = runImmediately(async () => {
+        const hydrationPromise = runImmediately(async () => {
           try {
             let resolvedData: string | null;
             try {
@@ -196,19 +198,16 @@ export function persist<S extends BaseStore<any>>(
             }
             applyHydration(resolvedData);
           } finally {
-            hydrationPending = false;
+            activeHydrations.delete(hydrationPromise);
           }
         });
+        pendingHydration = hydrationPromise;
+        activeHydrations.add(hydrationPromise);
         return pendingHydration;
       } else {
-        try {
-          return applyHydration(storedData);
-        } finally {
-          hydrationPending = false;
-        }
+        return applyHydration(storedData);
       }
     } catch (error) {
-      hydrationPending = false;
       unsubscribeFromHydrationTracking();
       try {
         onError("storage", error);
@@ -238,6 +237,7 @@ export function persist<S extends BaseStore<any>>(
   };
 
   const clear = () => {
+    hydrationGeneration++;
     if (persistenceTimer !== null) {
       clearTimeout(persistenceTimer);
       persistenceTimer = null;
@@ -277,7 +277,7 @@ export function persist<S extends BaseStore<any>>(
     flush,
     waitForPersistence: () => {
       const pending: Promise<void>[] = [];
-      if (hydrationPending && pendingHydration) pending.push(pendingHydration);
+      pending.push(...Array.from(activeHydrations));
       if (pendingPersistenceOperations > 0) pending.push(pendingWrites);
       if (pending.length === 0) return null;
       if (pending.length === 1) return pending[0];

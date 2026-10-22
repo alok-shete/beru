@@ -3,10 +3,15 @@
 ## Executive summary
 
 The audit reproduced and fixed B-01 through B-11 and B-13. B-12 was not
-reproduced and was not changed. Regression tests were run before the associated
-production fixes. The final validation reported 13 test files and 156 passing
-tests, a successful build and TypeScript check, and a successful packed-package
-consumer smoke test for CommonJS, ESM, and TypeScript imports.
+reproduced and was not changed. A follow-up PR review also reproduced and fixed
+two persistence hydration lifecycle races. B-14 was not reproduced: the current
+DevTools cleanup invokes its unsubscribe callback once, guards repeated calls,
+and removes the store listener in a `finally` block; regression tests for these
+behaviors pass without a production change. Regression tests were run before
+the associated production fixes. The final validation reported 13 test files
+and 160 passing tests, a successful build and TypeScript check, and a
+successful packed-package consumer smoke test for CommonJS, ESM, and TypeScript
+imports.
 
 No push or release was performed. The audit could not verify behavior on a
 physical React Native runtime; B-01 was exercised in a Node environment without
@@ -31,19 +36,48 @@ standalone smoke scripts passed their focused formatting check.
 | B-11 | Reproduced; fixed | Enumerable state/action name collisions made selector access ambiguous. Added a regression in `test/unit/create.test.ts`, now throws a clear error for collisions, and documented the behavior in `README.md`. |
 | B-12 | Not reproduced; not changed | No specific contract violation was established during the audit. No production change was made. |
 | B-13 | Reproduced; fixed | The release package's ESM entry could not resolve extensionless relative imports, and the build cleanup relied on the Unix-only `rm` command. Added package-consumer and prebuild smoke scripts; `post-build.js` now rewrites relative ESM specifiers and emits `dist/esm/package.json` with `"type":"module"`, and `package.json` uses Node's filesystem API for cross-platform cleanup. |
+| B-14 | Not reproduced; regression tests added | The current PR implementation invokes `unsubscribeFromDevTools()` once, sets the idempotency flag before cleanup, and unsubscribes the store listener in `finally`. Tests verify exactly-once cleanup, repeated cleanup, and store-listener removal when DevTools cleanup throws. Both tests passed against the current implementation, so no production change was warranted. |
+
+## Follow-up persistence race review
+
+The PR review reproduced two additional hydration races and fixed them
+test-first:
+
+- `clear()` could finish while an earlier asynchronous hydration was pending;
+  that hydration could then apply the data that had just been cleared. Each
+  hydration now carries a generation, and clearing invalidates earlier reads.
+- Overlapping forced hydrations could cause `waitForPersistence()` to stop
+  waiting when the newest hydration finished even though an older one remained
+  active. Active hydration promises are now tracked as a set, and the wait API
+  joins every active hydration. The same generation check prevents stale
+  hydration results from replacing the newest result.
+
+An additional check confirmed that completion of an obsolete hydration does
+not lose a store update's scheduled persistence write.
 
 ## Regression and validation results
 
 The test-first regressions were run against the unfixed behavior for reproduced
 findings. Those baseline runs reported failures for B-01 through B-11 and B-13;
-after the fixes, the corresponding targeted tests passed. The audit added 13
-Vitest regression cases and two standalone smoke scripts.
+after the fixes, the corresponding targeted tests passed. Follow-up persistence
+race tests failed against the prior implementation and passed after the fixes.
+The audit and follow-up added 17 Vitest regression cases and two standalone
+smoke scripts. B-14 tests passed against the current implementation; a failing
+B-14 baseline was not observed because the described defect was not present.
+
+The B-14 targeted command,
+`npm.cmd test -- --run test/unit/devtools.test.ts`, printed
+`Test Files 1 passed (1)` and `Tests 2 passed (2)`.
+Before the persistence fixes, the clear/hydration regression failed with
+`expected { count: 42 } to deeply equal { count: +0 }`; the overlapping
+hydration wait regression failed with `expected null not to be null`. Both
+passed after the fixes.
 
 | Check | Result |
 | --- | --- |
-| `npm.cmd test -- --run` | **Passed:** 13 test files, 156 tests passed. |
-| `npm.cmd run build` | **Passed** after making prebuild cleanup cross-platform and fixing generated ESM imports. |
-| `.\node_modules\.bin\tsc.cmd --noEmit --project tsconfig.base.json` | **Passed.** |
+| `npm.cmd test -- --run` | **Passed:** output `Test Files 13 passed (13)` and `Tests 160 passed (160)`. |
+| `npm.cmd run build` | **Passed:** CJS and ESM TypeScript builds completed; `post-build.js` copied README and LICENSE. |
+| `.\node_modules\.bin\tsc.cmd --noEmit --project tsconfig.base.json` | **Passed:** exit code 0, no diagnostics. |
 | `node test\package-consumer-smoke.js` against `dist` | **Passed:** CommonJS import, ESM import, and TypeScript consumer checks. |
 | `npm.cmd pack --dry-run --json` from `dist` | **Passed:** 40 package files listed, including declarations and `esm/package.json`. |
 | `node test\prebuild-smoke.js` | **Passed.** |

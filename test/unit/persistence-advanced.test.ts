@@ -168,6 +168,116 @@ describe("Persistence Advanced Tests", () => {
       await waitPromise;
       expect(store.get()).toEqual({ count: 42 });
     });
+
+    it("should not apply hydration that was pending when storage was cleared", async () => {
+      let finishHydration: ((value: string) => void) | undefined;
+      const storage = {
+        getItem: vi.fn(
+          () =>
+            new Promise<string>((resolve) => {
+              finishHydration = resolve;
+            })
+        ),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "clear-pending-hydration",
+        storage,
+      });
+
+      await persistent.clear();
+      finishHydration!(
+        JSON.stringify({ state: { count: 42 }, version: 0 })
+      );
+      await persistent.waitForPersistence();
+
+      expect(store.get()).toEqual({ count: 0 });
+    });
+
+    it("should wait for every concurrent forced hydration", async () => {
+      const finishHydrations: Array<(value: string) => void> = [];
+      const storage = {
+        getItem: vi.fn(
+          () =>
+            new Promise<string>((resolve) => {
+              finishHydrations.push(resolve);
+            })
+        ),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "concurrent-force-hydration",
+        storage,
+      });
+      const initialHydration = persistent.waitForPersistence();
+      const forcedHydration = persistent.forceHydrate();
+
+      finishHydrations[1](
+        JSON.stringify({ state: { count: 2 }, version: 0 })
+      );
+      await forcedHydration;
+      const waiting = persistent.waitForPersistence();
+
+      expect(waiting).not.toBeNull();
+      let waitResolved = false;
+      waiting!.then(() => {
+        waitResolved = true;
+      });
+      await Promise.resolve();
+      expect(waitResolved).toBe(false);
+
+      finishHydrations[0](
+        JSON.stringify({ state: { count: 1 }, version: 0 })
+      );
+      await initialHydration;
+      await waiting;
+
+      expect(store.get()).toEqual({ count: 2 });
+    });
+
+    it("should preserve writes when an obsolete hydration finishes", async () => {
+      vi.useFakeTimers();
+      const finishHydrations: Array<(value: string) => void> = [];
+      const storage = {
+        getItem: vi.fn(
+          () =>
+            new Promise<string>((resolve) => {
+              finishHydrations.push(resolve);
+            })
+        ),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "obsolete-hydration-write",
+        storage,
+        debounceTime: 100,
+      });
+      const initialHydration = persistent.waitForPersistence();
+      const forcedHydration = persistent.forceHydrate();
+
+      finishHydrations[1](
+        JSON.stringify({ state: { count: 2 }, version: 0 })
+      );
+      await forcedHydration;
+      store.set({ count: 3 });
+
+      finishHydrations[0](
+        JSON.stringify({ state: { count: 1 }, version: 0 })
+      );
+      await initialHydration;
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(storage.setItem).toHaveBeenCalledWith(
+        "obsolete-hydration-write",
+        JSON.stringify({ state: { count: 3 }, version: 0 })
+      );
+    });
   });
 
   describe("Clear Operations", () => {
