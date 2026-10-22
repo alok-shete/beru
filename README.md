@@ -514,6 +514,11 @@ await persistentStore.clear();
 persistentStore.dispose();
 ```
 
+`dispose()` stops persistence subscriptions and cancels delayed writes. Writes
+already in progress are allowed to finish. If disposal happens during async
+hydration, hydration may still update the store, but it will not restore the
+persistence subscription.
+
 ---
 
 ## Migration Guide

@@ -278,6 +278,35 @@ describe("Persistence Advanced Tests", () => {
         JSON.stringify({ state: { count: 3 }, version: 0 })
       );
     });
+
+    it("should not restore the persistence subscription after disposal during hydration", async () => {
+      let finishHydration: ((value: string | null) => void) | undefined;
+      const storage = {
+        getItem: vi.fn(
+          () =>
+            new Promise<string | null>((resolve) => {
+              finishHydration = resolve;
+            })
+        ),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "dispose-during-hydration",
+        storage,
+        debounceTime: 0,
+      });
+
+      persistent.dispose();
+      finishHydration!(null);
+      await persistent.waitForPersistence();
+
+      store.set({ count: 1 });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(storage.setItem).not.toHaveBeenCalled();
+    });
   });
 
   describe("Clear Operations", () => {
@@ -335,6 +364,49 @@ describe("Persistence Advanced Tests", () => {
       await clearing;
 
       expect(persisted.has("clear-in-flight")).toBe(false);
+    });
+
+    it("should allow an in-flight write to finish after disposal", async () => {
+      vi.useFakeTimers();
+      const persisted = new Map<string, string>();
+      let finishWrite: (() => void) | undefined;
+      const storage = {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(
+          (key: string, value: string) =>
+            new Promise<void>((resolve) => {
+              finishWrite = () => {
+                persisted.set(key, value);
+                resolve();
+              };
+            })
+        ),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "dispose-in-flight-write",
+        storage,
+        debounceTime: 0,
+      });
+
+      store.set({ count: 1 });
+      vi.advanceTimersByTime(0);
+      await Promise.resolve();
+      expect(finishWrite).toBeDefined();
+
+      persistent.dispose();
+      const waiting = persistent.waitForPersistence();
+      expect(waiting).not.toBeNull();
+      finishWrite!();
+      await waiting;
+
+      expect(JSON.parse(persisted.get("dispose-in-flight-write")!).state).toEqual({
+        count: 1,
+      });
+      store.set({ count: 2 });
+      vi.advanceTimersByTime(0);
+      expect(storage.setItem).toHaveBeenCalledTimes(1);
     });
 
     it("should handle clear with async storage", async () => {
@@ -527,6 +599,30 @@ describe("Persistence Advanced Tests", () => {
   });
 
   describe("Error Recovery", () => {
+    it("should report a synchronous getItem failure and continue persisting", async () => {
+      const error = new Error("Synchronous read failed");
+      const onError = vi.fn();
+      const storage = {
+        getItem: vi.fn(() => {
+          throw error;
+        }),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "sync-get-error",
+        storage,
+        onError,
+      });
+
+      expect(onError).toHaveBeenCalledWith("storage", error);
+      store.set({ count: 1 });
+      await persistent.flush();
+
+      expect(storage.setItem).toHaveBeenCalledTimes(1);
+    });
+
     it("should report rejected hydration and initialize persistence afterward", async () => {
       vi.useFakeTimers();
       const error = new Error("Storage unavailable");
@@ -551,6 +647,26 @@ describe("Persistence Advanced Tests", () => {
       await vi.advanceTimersByTimeAsync(0);
 
       expect(storage.setItem).toHaveBeenCalledTimes(1);
+    });
+
+    it("should report a rejected setItem without stalling the queue", async () => {
+      const error = new Error("Storage write failed");
+      const onError = vi.fn();
+      const storage = {
+        getItem: vi.fn(() => null),
+        setItem: vi.fn(() => Promise.reject(error)),
+        removeItem: vi.fn(),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "rejected-set-item",
+        storage,
+        onError,
+      });
+
+      await persistent.flush();
+      expect(onError).toHaveBeenCalledWith("persistence", error);
+      expect(persistent.waitForPersistence()).toBeNull();
     });
 
     it("should recover from storage initialization errors", () => {

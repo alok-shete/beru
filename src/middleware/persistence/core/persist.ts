@@ -55,6 +55,7 @@ export function persist<S extends BaseStore<any>>(
   let persistenceTimer: ReturnType<typeof setTimeout> | null = null;
   let storeUnsubscribe: (() => void) | null = null;
   let isStoreInitialized = false;
+  let isDisposed = false;
   let pendingHydration: Promise<void> | null = null;
   let hydrationGeneration = 0;
   const activeHydrations = new Set<Promise<void>>();
@@ -128,6 +129,7 @@ export function persist<S extends BaseStore<any>>(
 
   const hydrateFromStoredData = (
     storedData: string | null,
+    generation: number,
     shouldApplyHydration: () => boolean
   ) => {
     if (storedData) {
@@ -149,12 +151,13 @@ export function persist<S extends BaseStore<any>>(
         onError("migration", error);
       }
     }
-    initializeSubscription();
+    initializeSubscription(generation);
   };
 
   const hydrate = () => {
     if (pendingHydration instanceof Promise) return pendingHydration;
 
+    isDisposed = false;
     const generation = ++hydrationGeneration;
     let isInitialNotification = true;
     let hasUpdatedDuringHydration = false;
@@ -169,6 +172,7 @@ export function persist<S extends BaseStore<any>>(
       try {
         hydrateFromStoredData(
           storedData,
+          generation,
           () =>
             !hasUpdatedDuringHydration && generation === hydrationGeneration
         );
@@ -192,7 +196,7 @@ export function persist<S extends BaseStore<any>>(
               try {
                 onError("storage", error);
               } finally {
-                initializeSubscription();
+                initializeSubscription(generation);
               }
               return;
             }
@@ -212,7 +216,7 @@ export function persist<S extends BaseStore<any>>(
       try {
         onError("storage", error);
       } finally {
-        initializeSubscription();
+        initializeSubscription(generation);
       }
     }
   };
@@ -225,12 +229,14 @@ export function persist<S extends BaseStore<any>>(
     }, debounceTime);
   };
 
-  const initializeSubscription = () => {
+  const initializeSubscription = (generation: number) => {
+    if (isDisposed || generation !== hydrationGeneration) return;
     dispose();
     storeUnsubscribe = store.subscribe(scheduleStatePersistence);
   };
 
   const dispose = () => {
+    isDisposed = true;
     storeUnsubscribe?.();
     storeUnsubscribe = null;
     if (persistenceTimer !== null) clearTimeout(persistenceTimer);

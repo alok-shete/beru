@@ -298,7 +298,9 @@ type PersistentStore<S> = S & {
   hydrate: () => void | Promise<void>;
 
   /**
-   * Disposes of the store, cleaning up any resources.
+   * Stops persistence subscriptions and cancels delayed writes. Writes already
+   * in progress finish; an active hydration may update state but will not
+   * restore the persistence subscription after disposal.
    */
   dispose: () => void;
 

@@ -279,6 +279,24 @@ describe("persist", () => {
       expect(Array.isArray(store.get())).toBe(true);
     });
 
+    it("persists array state without changing its runtime type", async () => {
+      const storage = fakeStorage();
+      const store = create([1, 2]);
+      const persistent = persist(store, {
+        name: "array-round-trip",
+        storage,
+      });
+
+      store.set([3, 4]);
+      await persistent.flush();
+
+      const persistedValue = JSON.parse(
+        storage.setItem.mock.calls[0][1]
+      ).state;
+      expect(persistedValue).toEqual([3, 4]);
+      expect(Array.isArray(persistedValue)).toBe(true);
+    });
+
     it("hydrates falsy primitive values", () => {
       const values = [
         { initial: 1, persisted: 0 },

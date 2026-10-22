@@ -39,6 +39,9 @@ describe("DevTools subscriptions", () => {
     expect(send).toHaveBeenCalledTimes(1);
 
     cleanup();
+    expect(connectionUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(storeUnsubscribe).toHaveBeenCalledTimes(1);
+
     cleanup();
     expect(connectionUnsubscribe).toHaveBeenCalledTimes(1);
     expect(storeUnsubscribe).toHaveBeenCalledTimes(1);
