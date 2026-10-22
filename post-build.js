@@ -20,6 +20,28 @@ const copyFileAsync = async (source, destination) => {
   }
 };
 
+const rewriteEsmImports = async (directory) => {
+  const entries = await fs.promises.readdir(directory, { withFileTypes: true });
+  await Promise.all(
+    entries.map(async (entry) => {
+      const filePath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await rewriteEsmImports(filePath);
+      } else if (entry.isFile() && entry.name.endsWith(".js")) {
+        const contents = await readFile(filePath);
+        const rewritten = contents.replace(
+          /(from\s+|import\s*\()(["'])(\.{1,2}\/[^"']+)\2/g,
+          (match, prefix, quote, specifier) =>
+            /\.(?:js|json|node)$/.test(specifier)
+              ? match
+              : `${prefix}${quote}${specifier}.js${quote}`
+        );
+        if (rewritten !== contents) await writeFile(filePath, rewritten);
+      }
+    })
+  );
+};
+
 const build = async () => {
   const packageJson = JSON.parse(await readFile("./package.json"));
 
@@ -55,6 +77,11 @@ const build = async () => {
     },
   };
 
+  await rewriteEsmImports(path.join(destinationPath, "esm"));
+  await writeFile(
+    path.join(destinationPath, "esm", "package.json"),
+    JSON.stringify({ type: "module" }, null, 2)
+  );
   await writeFile("./dist/package.json", JSON.stringify(packageJson, null, 2));
 
   await copyFileAsync(

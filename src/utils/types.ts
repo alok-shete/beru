@@ -220,7 +220,10 @@ export interface PersistConfig<T> {
    * @param version - The version number of the persisted data.
    * @returns The transformed state value.
    */
-  migrate?: (storedValue: Partial<T> | T, version?: number) => Partial<T>;
+  migrate?: (
+    storedValue: Partial<T> | T,
+    version?: number
+  ) => Partial<T> | null;
 
   /**
    * A function to partially select which state to persist.
@@ -295,12 +298,14 @@ type PersistentStore<S> = S & {
   hydrate: () => void | Promise<void>;
 
   /**
-   * Disposes of the store, cleaning up any resources.
+   * Stops persistence subscriptions and cancels delayed writes. Writes already
+   * in progress finish; an active hydration may update state but will not
+   * restore the persistence subscription after disposal.
    */
   dispose: () => void;
 
   /**
-   * Clears the persisted state.
+   * Cancels delayed writes, waits for queued operations, and clears persisted state.
    *
    * @returns A promise that resolves when the state is cleared.
    */
@@ -315,7 +320,7 @@ type PersistentStore<S> = S & {
   flush: () => Promise<void>;
 
   /**
-   * Waits for any ongoing persistence operations to complete.
+   * Waits for active hydration, writes, and clear operations to complete.
    * Returns null if no persistence operations are in progress.
    *
    * @returns A promise that resolves when persistence is complete, or null if no operations are pending.

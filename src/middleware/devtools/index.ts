@@ -110,7 +110,7 @@ export function devtoolsImpl<S extends BaseStore<any>>(
     }
   );
 
-  store.subscribe((state: StoreState<S>) => {
+  const unsubscribeFromStore = store.subscribe((state: StoreState<S>) => {
     if (skipNextUpdate) {
       skipNextUpdate = false;
       return;
@@ -144,8 +144,15 @@ export function devtoolsImpl<S extends BaseStore<any>>(
     }
   }
 
+  let isUnsubscribed = false;
   const __devtoolsUnsubscribe = () => {
-    unsubscribeFromDevTools();
+    if (isUnsubscribed) return;
+    isUnsubscribed = true;
+    try {
+      unsubscribeFromDevTools();
+    } finally {
+      unsubscribeFromStore();
+    }
   };
 
   return {

@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import React, { useState as useReactState, useEffect, StrictMode } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { create, Store, useSelect, useState } from "../../src";
 import {
   ANY,
@@ -500,6 +502,23 @@ describe("React Integration Tests", () => {
   });
 
   describe("SSR and Hydration", () => {
+    it("should render the initial store snapshot on the server and hydrate to current state", async () => {
+      const store = create({ count: 0 });
+      store.set({ count: 42 });
+
+      const Counter = () => <span>{useSelect(store, (state) => state.count)}</span>;
+      const serverMarkup = renderToString(<Counter />);
+      expect(serverMarkup).toBe("<span>0</span>");
+
+      const container = document.createElement("div");
+      container.innerHTML = serverMarkup;
+      const root = await act(async () => hydrateRoot(container, <Counter />));
+
+      expect(container.textContent).toBe("42");
+
+      await act(async () => root.unmount());
+    });
+
     it("should handle server-side rendering correctly", () => {
       const store = create({ count: 42 });
 
