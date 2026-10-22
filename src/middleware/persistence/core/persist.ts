@@ -231,15 +231,22 @@ export function persist<S extends BaseStore<any>>(
 
   const initializeSubscription = (generation: number) => {
     if (isDisposed || generation !== hydrationGeneration) return;
-    dispose();
+    stopPersistenceSubscription();
     storeUnsubscribe = store.subscribe(scheduleStatePersistence);
+  };
+
+  const stopPersistenceSubscription = () => {
+    storeUnsubscribe?.();
+    storeUnsubscribe = null;
+    if (persistenceTimer !== null) {
+      clearTimeout(persistenceTimer);
+      persistenceTimer = null;
+    }
   };
 
   const dispose = () => {
     isDisposed = true;
-    storeUnsubscribe?.();
-    storeUnsubscribe = null;
-    if (persistenceTimer !== null) clearTimeout(persistenceTimer);
+    stopPersistenceSubscription();
   };
 
   const clear = () => {
@@ -247,6 +254,13 @@ export function persist<S extends BaseStore<any>>(
     if (persistenceTimer !== null) {
       clearTimeout(persistenceTimer);
       persistenceTimer = null;
+    }
+    if (
+      activeHydrations.size > 0 &&
+      !isDisposed &&
+      storeUnsubscribe === null
+    ) {
+      storeUnsubscribe = store.subscribe(scheduleStatePersistence);
     }
 
     return enqueuePersistenceOperation(() =>

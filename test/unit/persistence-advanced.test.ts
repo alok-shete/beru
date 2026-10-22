@@ -196,6 +196,112 @@ describe("Persistence Advanced Tests", () => {
       expect(store.get()).toEqual({ count: 0 });
     });
 
+    it("should persist new state after clearing while hydration is pending", async () => {
+      vi.useFakeTimers();
+      const persisted = new Map<string, string>();
+      let finishHydration: ((value: string | null) => void) | undefined;
+      const storage = {
+        getItem: vi.fn(
+          () =>
+            new Promise<string | null>((resolve) => {
+              finishHydration = resolve;
+            })
+        ),
+        setItem: vi.fn((key: string, value: string) => {
+          persisted.set(key, value);
+        }),
+        removeItem: vi.fn((key: string) => {
+          persisted.delete(key);
+        }),
+      };
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "clear-pending-hydration-write",
+        storage,
+        debounceTime: 100,
+      });
+
+      await persistent.clear();
+      finishHydration!(
+        JSON.stringify({ state: { count: 42 }, version: 0 })
+      );
+      await persistent.waitForPersistence();
+
+      store.set({ count: 1 });
+      await vi.advanceTimersByTimeAsync(100);
+      await persistent.waitForPersistence();
+
+      expect(store.get()).toEqual({ count: 1 });
+      expect(JSON.parse(persisted.get("clear-pending-hydration-write")!).state)
+        .toEqual({ count: 1 });
+    });
+
+    it("should retain exactly one persistence subscription if hydration rejects after clear", async () => {
+      const hydrationError = new Error("Hydration read failed");
+      let rejectHydration: ((error: Error) => void) | undefined;
+      const storage = {
+        getItem: vi.fn(
+          () =>
+            new Promise<string | null>((_resolve, reject) => {
+              rejectHydration = reject;
+            })
+        ),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      };
+      const onError = vi.fn();
+      const store = create({ count: 0 });
+      const activeListeners = new Set<() => void>();
+      const subscribe = store.subscribe.bind(store);
+      vi.spyOn(store, "subscribe").mockImplementation((listener) => {
+        const unsubscribe = subscribe(listener);
+        activeListeners.add(listener);
+        return () => {
+          activeListeners.delete(listener);
+          unsubscribe();
+        };
+      });
+      const persistent = persist(store, {
+        name: "clear-rejected-hydration",
+        storage,
+        onError,
+        debounceTime: 0,
+      });
+
+      await persistent.clear();
+      rejectHydration!(hydrationError);
+      await persistent.waitForPersistence();
+
+      expect(onError).toHaveBeenCalledWith("storage", hydrationError);
+      expect(activeListeners.size).toBe(1);
+
+      store.set({ count: 1 });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(storage.setItem).toHaveBeenCalledTimes(1);
+      expect(activeListeners.size).toBe(1);
+      persistent.dispose();
+      expect(activeListeners.size).toBe(0);
+    });
+
+    it("should not start persistence on clear when hydration is explicitly skipped", async () => {
+      vi.useFakeTimers();
+      const storage = fakeStorage();
+      const store = create({ count: 0 });
+      const persistent = persist(store, {
+        name: "skip-hydrate-clear",
+        storage,
+        skipHydrate: true,
+        debounceTime: 0,
+      });
+
+      await persistent.clear();
+      store.set({ count: 1 });
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(storage.setItem).not.toHaveBeenCalled();
+    });
+
     it("should wait for every concurrent forced hydration", async () => {
       const finishHydrations: Array<(value: string) => void> = [];
       const storage = {
